@@ -55,6 +55,19 @@ class PlotResults(dt.DataSet):
     colX = self.selectXValues - 1
     colY = self.selectYValues - 1
 
+    XLabel = []
+    YLabel = []
+    for i in range( len( XValues )):
+      if XValues[i][0] == self.selectXValues:
+        XLabel = XValues[i][1]
+        break
+
+    for i in range( len( YValues )):
+      if YValues[i][0] == self.selectYValues:
+        YLabel = YValues[i][1]
+        break
+
+
     aCfgChoice       = []
     fileConfig       = []
     fileConfigChoice = []
@@ -118,6 +131,12 @@ class PlotResults(dt.DataSet):
       f_gnuplot_name = tempfile.NamedTemporaryFile( prefix="gnuplot_").name
       f_gnuplot = open( f_gnuplot_name, 'w' )
       f_gnuplot.write( GnuPlotTemplate )
+
+      if XLabel:
+        f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
+      if YLabel:
+        f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
+
       f_gnuplot.write( "set output '"  + plotFileName + ".eps'\n" )
       plot_cmd = "plot "
 

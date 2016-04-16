@@ -20,8 +20,11 @@ import guidata.dataset.dataitems as di
 from operator import itemgetter, attrgetter
 
 
+#from cfgData import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate )
+# Debug
+from cfgData_1 import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate )
 
-from cfgData import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate )
+
 
 # Global GUI params
 #global ConfigurationFile
@@ -44,7 +47,7 @@ def readResults(fname):
     ResultsTable.append(line.split())
 
 
-class RandomLoss(dt.DataSet):
+class PlotResults(dt.DataSet):
 
   def genPlot(self):
     global filtResults
@@ -52,7 +55,7 @@ class RandomLoss(dt.DataSet):
     colX = self.selectXValues - 1
     colY = self.selectYValues - 1
 
-    aCfgChoice = []
+    aCfgChoice       = []
     fileConfig       = []
     fileConfigChoice = []
     plotConfig       = []
@@ -64,17 +67,18 @@ class RandomLoss(dt.DataSet):
 
     for i in range( len( Configs )):
       exec("aCfgChoice.append( self.cfgChoice%d )" % (i) )
-
+      use_for_plot = 0
       for j in self.selectPlotCfg:
         if Configs[i].title == self.aAvailableCfg[j]:
-          Configs[i].use_for_plot = 1
-          plotConditions += 1
+          use_for_plot = 1
+          break
 
-      if Configs[i].use_for_plot == 0:
+      if use_for_plot == 0:
         fileConfig.append( Configs[i] )
         fileConfigChoice.append( aCfgChoice[i] )
         numberPlots *= len( aCfgChoice[i] )
       else:
+        plotConditions += 1
         plotConfig.append( Configs[i] )
         plotConfigChoice.append( aCfgChoice[i] )
         numberLines *= len( aCfgChoice[i] )
@@ -86,11 +90,6 @@ class RandomLoss(dt.DataSet):
     print( "Using columns %d vs %d" % (colX, colY) )
 
     readResults( self.resultsFile )
-
-    #filterString = ""
-    #for i in range( len( Configs )):
-      #filterString += " " + Configs[i].configs[aCfgChoice[i][0]]
-    #print( filterString )
 
 
     catIdx = 0
@@ -109,6 +108,9 @@ class RandomLoss(dt.DataSet):
     plotConfigChoiceCurrentIdx = len( plotConfig ) - 1
     plotConfigChoiceCurrent = [ int(0) for i in range( len( plotConfig ) )]
 
+    #for line in filteredResults:
+      #print( line )
+
     try:
 
       ## Init gnuplot script
@@ -119,14 +121,18 @@ class RandomLoss(dt.DataSet):
       f_gnuplot.write( "set output '"  + plotFileName + ".eps'\n" )
       plot_cmd = "plot "
 
-
       for plot_idx in range( numberLines ):
+
 
         ## Filter results for the current line
         legend = ""
+        currResults = filteredResults
         for i in range( len( plotConfig )):
-          currResults = filterResults( filteredResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
+          currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
           legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " "
+
+        #for line in currResults:
+          #print( line )
 
         if not currResults:
           raise NameError('There is not values plot')
@@ -148,12 +154,12 @@ class RandomLoss(dt.DataSet):
         plot_cmd += "'" + f_data_name + "' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
 
 
-        if plotConfigChoiceCurrent[plotConfigChoiceCurrentIdx] ==  len( plotConfigChoice[plotConfigChoiceCurrentIdx] ) - 1:
-          plotConfigChoiceCurrent[plotConfigChoiceCurrentIdx] = 0
-          plotConfigChoiceCurrentIdx -= 1
-          plotConfigChoiceCurrent[plotConfigChoiceCurrentIdx] += 1
-        else:
-          plotConfigChoiceCurrent[plotConfigChoiceCurrentIdx] += 1
+        for i in reversed(range( len( plotConfig ))):
+          if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
+            plotConfigChoiceCurrent[i] = 0
+          else:
+            plotConfigChoiceCurrent[i] += 1
+            break
 
 
       ## Close gnuplot script
@@ -188,13 +194,17 @@ class RandomLoss(dt.DataSet):
 
   if len(Configs) > 1:
     cfg = Configs[1]
-    cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0] ).vertical(2)
+    cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0, 1] ).vertical(2)
 
   if len(Configs) > 2:
     cfg = Configs[2]
-    cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0, 1, 2] ).vertical(2)
+    cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0, 2] ).vertical(2)
 
-  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] ).vertical(4)
+  if len(Configs) > 3:
+    cfg = Configs[3]
+    cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(2)
+
+  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[1, 2] ).vertical(4)
 
   selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0, colspan=2)
   selectYValues = di.ChoiceItem("Y values", YValues).set_pos(col=1, colspan=2)
@@ -218,7 +228,7 @@ if __name__ == '__main__':
       #exit()
 
 
-  plts = RandomLoss("Decoder - Randon Loss")
+  plts = PlotResults("Plot Results")
   #g = dt.DataSetGroup( [plts], title='Running Tests Plots' )
   while (1):
     if plts.edit():

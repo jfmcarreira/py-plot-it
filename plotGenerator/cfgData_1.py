@@ -13,7 +13,7 @@ Configs = [ ConfigurationList() for i in range(3)]
 XValues = []
 YValues = []
 
-ResultsFile = "results_example"
+ResultsFile = "results_example_1"
 
 ###################################################################################################################
 # Base
@@ -74,19 +74,26 @@ ConfigsCond.name    = [ 'Ref',
                         'ConcStream20',
                       ]
 
+#ConfigsConceal.configs  = [ 'ConcealmentMC', 'ConcealmentMVE' ]
+#ConfigsConceal.name     = [ 'MC',            'MVE' ]
+
+ConfigsConceal.configs  = [ 'ConcealmentMVE' ]
+ConfigsConceal.name     = [ 'MVE' ]
+
 
 Configs[2].title    = 'Condition'
 Configs[2].tab      = 3
 for i in range( len( ConfigsCond.configs ) ):
-    Configs[2].configs.append( ConfigsCond.configs[i]  )
-    Configs[2].name.append( ConfigsCond.name[i] )
+  for j in range( len( ConfigsConceal.configs ) ):
+    Configs[2].configs.append( ConfigsCond.configs[i] + "_" + ConfigsConceal.configs[j] )
+    Configs[2].name.append( ConfigsCond.name[i] + " " + ConfigsConceal.name[j] )
 
 
 ###################################################################################################################
 # Configure results columns
 
 XValues = [(6, "Bitrate [kbps]"), (7, "Packet Loss Ratio [%]") ]
-YValues = [(7, "PSNR [dB]") ]
+YValues = [(8, "PSNR [dB]"), (9, "SSIM")]
 
 
 

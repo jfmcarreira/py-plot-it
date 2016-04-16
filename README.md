@@ -1,2 +1,2 @@
-# pyPlotGenerator
-Python GUI to generated plots using gnuplot
+# python-helpers
+A mix of pyhton scripts! See README in each folder

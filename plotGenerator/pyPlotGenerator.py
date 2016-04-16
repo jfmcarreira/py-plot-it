@@ -2,10 +2,9 @@
 
 import os, sys
 import guidata
-import csv
 import tempfile
 import os.path
-import importlib
+import signal
 
 from guidata.qt.QtGui import QMainWindow, QSplitter
 from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
@@ -25,6 +24,7 @@ from operator import itemgetter, attrgetter
 from cfgData_1 import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate )
 
 
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 # Global GUI params
 #global ConfigurationFile

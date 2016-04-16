@@ -52,9 +52,6 @@ class PlotResults(dt.DataSet):
   def genPlot(self):
     global filtResults
 
-    colX = self.selectXValues - 1
-    colY = self.selectYValues - 1
-
     XLabel = []
     YLabel = []
     for i in range( len( XValues )):
@@ -67,6 +64,12 @@ class PlotResults(dt.DataSet):
         YLabel = YValues[i][1]
         break
 
+    colX = self.selectXValues - 1
+    colY = self.selectYValues - 1
+
+    #
+    # Init variables
+    #
 
     aCfgChoice       = []
     fileConfig       = []
@@ -104,103 +107,127 @@ class PlotResults(dt.DataSet):
 
     readResults( self.resultsFile )
 
-
     catIdx = 0
     plotFileNameList = []
-
-    ## Filter the result set for the different line curves of the current plot
-    filteredResults = ResultsTable;
-    plotFileName = ""
-    for i in range( len( fileConfig )):
-        filteredResults = filterResults( filteredResults, fileConfig[i].tab, fileConfig[i].configs[fileConfigChoice[i][catIdx]] )
-        plotFileName += fileConfig[i].configs[fileConfigChoice[i][catIdx]] + "_"
-
-    plotFileName = plotFileName[:-1]
-    plotFileName = "test_plot"
-
-    plotConfigChoiceCurrentIdx = len( plotConfig ) - 1
-    plotConfigChoiceCurrent = [ int(0) for i in range( len( plotConfig ) )]
-
-    #for line in filteredResults:
-      #print( line )
-
-    try:
-
-      ## Init gnuplot script
-      dataFileNameList = []
-      f_gnuplot_name = tempfile.NamedTemporaryFile( prefix="gnuplot_").name
-      f_gnuplot = open( f_gnuplot_name, 'w' )
-      f_gnuplot.write( GnuPlotTemplate )
-
-      if XLabel:
-        f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
-      if YLabel:
-        f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
-
-      f_gnuplot.write( "set output '"  + plotFileName + ".eps'\n" )
-      plot_cmd = "plot "
-
-      for plot_idx in range( numberLines ):
+    plotFileName = "Plot"
 
 
-        ## Filter results for the current line
-        legend = ""
-        currResults = filteredResults
-        for i in range( len( plotConfig )):
-          currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
-          legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " "
+    fileConfigChoiceCurrentIdx = len( fileConfig ) - 1
+    fileConfigChoiceCurrent = [ int(0) for i in range( len( fileConfig ) )]
 
-        #for line in currResults:
-          #print( line )
+    for file_idx in range( numberPlots ):
 
-        if not currResults:
-          raise NameError('There is not values plot')
+      ## Filter the result set for the different line curves of the current plot
+      filteredResults = ResultsTable;
+      plotCurrentFileName = ""
+      plotCurrentTitle = ""
+      for i in range( len( fileConfig )):
+          filteredResults = filterResults( filteredResults, fileConfig[i].tab, fileConfig[i].configs[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] )
+          plotCurrentFileName += fileConfig[i].configs[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] + "_"
+          plotCurrentTitle += fileConfig[i].name[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] + " - "
 
-        legend = legend[:-1]
+      plotCurrentFileName = plotCurrentFileName[:-1]
+      plotCurrentTitle = plotCurrentTitle[:-3]
+      #plotFileName = "test_plot"
 
-        f_data_name = tempfile.NamedTemporaryFile( prefix="data_" ).name
-        dataFileNameList.append( f_data_name )
-        f_data = open( f_data_name, 'w' )
-        currResultsSort = currResults
-        #currResultsSort = sorted(currResults, key=itemgetter(colX))
-        for line in currResultsSort:
-          #print( [ line[colX], line[colY] ] )
-          f_data.write( "%s %s \n" % ( line[colX], line[colY] ) )
-        f_data.close()
-        os.system( "sort -n " + f_data_name + " > " + f_data_name + "_sorted" )
-        os.system( "mv " + f_data_name + "_sorted " + f_data_name )
+      plotConfigChoiceCurrentIdx = len( plotConfig ) - 1
+      plotConfigChoiceCurrent = [ int(0) for i in range( len( plotConfig ) )]
 
-        plot_cmd += "'" + f_data_name + "' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
+      #for line in filteredResults:
+        #print( line )
+
+      try:
+
+        ## Init gnuplot script
+        dataFileNameList = []
+        f_gnuplot_name = tempfile.NamedTemporaryFile( prefix="gnuplot_").name
+        f_gnuplot = open( f_gnuplot_name, 'w' )
+        f_gnuplot.write( GnuPlotTemplate )
+
+        if XLabel:
+          f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
+        if YLabel:
+          f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
+
+        f_gnuplot.write( "set title '" + plotCurrentTitle + "'\n" )
+
+        f_gnuplot.write( "set output '"  + plotCurrentFileName + ".eps'\n" )
+        plot_cmd = "plot "
+
+        for plot_idx in range( numberLines ):
 
 
-        for i in reversed(range( len( plotConfig ))):
-          if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
-            plotConfigChoiceCurrent[i] = 0
-          else:
-            plotConfigChoiceCurrent[i] += 1
-            break
+          ## Filter results for the current line
+          legend = ""
+          currResults = filteredResults
+          for i in range( len( plotConfig )):
+            currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
+            legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " - "
+
+          legend = legend[:-3]
+          #for line in currResults:
+            #print( line )
+
+          if not currResults:
+            raise NameError('There is not values plot')
+
+          f_data_name = tempfile.NamedTemporaryFile( prefix="data_" ).name
+          dataFileNameList.append( f_data_name )
+          f_data = open( f_data_name, 'w' )
+          currResultsSort = currResults
+          #currResultsSort = sorted(currResults, key=itemgetter(colX))
+          for line in currResultsSort:
+            f_data.write( "%s %s \n" % ( line[colX], line[colY] ) )
+          f_data.close()
+          os.system( "sort -n " + f_data_name + " > " + f_data_name + "_sorted" )
+          os.system( "mv " + f_data_name + "_sorted " + f_data_name )
+
+          plot_cmd += "'" + f_data_name + "' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
+
+          for i in reversed(range( len( plotConfig ))):
+            if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
+              plotConfigChoiceCurrent[i] = 0
+            else:
+              plotConfigChoiceCurrent[i] += 1
+              break
+
+        ## Close gnuplot script
+        plot_cmd = plot_cmd[:-1]
+        f_gnuplot.write( plot_cmd )
+        f_gnuplot.close()
+        ## Plot and convert
+        os.system( "gnuplot -e \"load '" + f_gnuplot_name + "'\" ")
+        if os.path.isfile( plotCurrentFileName + ".eps" ):
+          os.system( "ps2pdf -dEPSCrop " + plotCurrentFileName + ".eps " + plotCurrentFileName + ".pdf" )
+          os.remove( plotCurrentFileName + ".eps" )
+          plotFileNameList.append( plotCurrentFileName + ".pdf" )
+
+      except NameError as err:
+        print(err)
+
+      ## Clean up files
+      os.remove( f_gnuplot_name )
+      for f in dataFileNameList:
+        os.remove( f )
 
 
-      ## Close gnuplot script
-      plot_cmd = plot_cmd[:-1]
-      f_gnuplot.write( plot_cmd )
-      f_gnuplot.close()
-      ## Plot and convert
-      os.system( "gnuplot -e \"load '" + f_gnuplot_name + "'\" ")
-      if os.path.isfile( plotFileName + ".eps" ):
-        os.system( "ps2pdf -dEPSCrop " + plotFileName + ".eps " + plotFileName + ".pdf" )
-        os.remove( plotFileName + ".eps" )
-        plotFileNameList.append( plotFileName + ".pdf" )
+      for i in reversed(range( len( fileConfig ))):
+        if fileConfigChoiceCurrent[i] ==  len( fileConfigChoice[i] ) - 1:
+          fileConfigChoiceCurrent[i] = 0
+        else:
+          fileConfigChoiceCurrent[i] += 1
+          break
 
-    except NameError as err:
-      print(err)
-
-    ## Clean up files
-    os.remove( f_gnuplot_name )
-    for f in dataFileNameList:
+    convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" + plotFileName + ".pdf"
+    for f in plotFileNameList:
+      convert_cmd += " " + f
+    os.system( convert_cmd )
+    for f in plotFileNameList:
       os.remove( f )
 
-
+  #
+  # Class definition
+  #
   resultsFile = di.FileOpenItem("Summary file", default = ResultsFile )
 
   aAvailableCfg = []

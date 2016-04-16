@@ -112,7 +112,7 @@ set ylabel  font 'TimesNewRoman,18' offset character  0.9,    0, 0
 set ytics   font 'TimesNewRoman,16'
 set key     font 'TimesNewRoman,16'
 
-set key spacing 1  top right width 4
+set key spacing 1  top right width 0
 
 set style line 4 lc 1 lt  1 lw 3 pt  2 ps 1
 set style line 2 lc 2 lt  2 lw 3 pt  3 ps 1

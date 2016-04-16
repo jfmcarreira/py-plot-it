@@ -19,9 +19,9 @@ import guidata.dataset.dataitems as di
 from operator import itemgetter, attrgetter
 
 
-#from cfgData import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate )
+#from cfgData import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile )
 # Debug
-from cfgData_1 import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate )
+from cfgData_1 import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile )
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -109,7 +109,7 @@ class PlotResults(dt.DataSet):
 
     catIdx = 0
     plotFileNameList = []
-    plotFileName = "Plot"
+    plotFileName = self.plotFile
 
 
     fileConfigChoiceCurrentIdx = len( fileConfig ) - 1
@@ -228,7 +228,8 @@ class PlotResults(dt.DataSet):
   #
   # Class definition
   #
-  resultsFile = di.FileOpenItem("Summary file", default = ResultsFile )
+  resultsFile = di.FileOpenItem("Results file", default = ResultsFile )
+  plotFile = di.StringItem("Plot file", default = PlotFile )
 
   aAvailableCfg = []
   for cfg in Configs:

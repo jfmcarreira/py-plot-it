@@ -15,6 +15,7 @@ YValues = []
 
 ResultsFile = "results_example"
 PlotFile = "Plot"
+PlotLegendDefault = 4
 
 ###################################################################################################################
 # Base

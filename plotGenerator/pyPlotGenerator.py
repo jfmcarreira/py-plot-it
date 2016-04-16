@@ -19,9 +19,9 @@ import guidata.dataset.dataitems as di
 from operator import itemgetter, attrgetter
 
 
-#from cfgData import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile )
+from cfgData import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile, PlotLegendDefault )
 # Debug
-from cfgData_1 import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile )
+#from cfgData_1 import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile )
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -148,8 +148,11 @@ class PlotResults(dt.DataSet):
           f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
         if YLabel:
           f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
+        if self.legendPosition:
+          f_gnuplot.write( "set key " + self.legendPosition[self.legendPositionIdx].lower() + "\n" )
 
-        f_gnuplot.write( "set title '" + plotCurrentTitle + "'\n" )
+        if self.showTitle:
+          f_gnuplot.write( "set title '" + plotCurrentTitle + "'\n" )
 
         f_gnuplot.write( "set output '"  + plotCurrentFileName + ".eps'\n" )
         plot_cmd = "plot "
@@ -251,10 +254,18 @@ class PlotResults(dt.DataSet):
     cfg = Configs[3]
     cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(2)
 
-  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[1, 2] ).vertical(4)
+  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[1, 2] )
 
-  selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0, colspan=2)
-  selectYValues = di.ChoiceItem("Y values", YValues).set_pos(col=1, colspan=2)
+  legendPosition =["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
+  _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0, colspan=3)
+  legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault-1 )
+  showTitle = di.BoolItem("Display plot title")
+  _egFig = dt.EndGroup("Figure definition")
+
+  _bgAx = dt.BeginGroup("Axis definition").set_pos(col=3, colspan=3)
+  selectXValues = di.ChoiceItem("X values", XValues)
+  selectYValues = di.ChoiceItem("Y values", YValues)
+  _egAx = dt.EndGroup("Axis definition")
 
 
 #class Init(dt.DataSet):

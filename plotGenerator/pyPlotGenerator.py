@@ -64,16 +64,16 @@ class PlotResults(dt.DataSet):
         YLabel = YValues[i][1]
         break
 
-    colX = self.selectXValues - 1
-    colY = self.selectYValues - 1
-
     #
     # Init variables
     #
 
+    # General cfg variable
     aCfgChoice       = []
+    # Configs for each group of plots
     fileConfig       = []
     fileConfigChoice = []
+    # Configs for each plot
     plotConfig       = []
     plotConfigChoice = []
 
@@ -103,7 +103,7 @@ class PlotResults(dt.DataSet):
       return
 
     print( "Generation %d plots with %d lines!" % (numberPlots, numberLines) )
-    print( "Using columns %d vs %d" % (colX, colY) )
+    print( "Using columns %d vs %d" % (self.selectXValues - 1, self.selectYValues - 1) )
 
     readResults( self.resultsFile )
 
@@ -112,7 +112,6 @@ class PlotResults(dt.DataSet):
     plotFileName = self.plotFile
 
 
-    fileConfigChoiceCurrentIdx = len( fileConfig ) - 1
     fileConfigChoiceCurrent = [ int(0) for i in range( len( fileConfig ) )]
 
     for file_idx in range( numberPlots ):
@@ -128,13 +127,7 @@ class PlotResults(dt.DataSet):
 
       plotCurrentFileName = plotCurrentFileName[:-1]
       plotCurrentTitle = plotCurrentTitle[:-3]
-      #plotFileName = "test_plot"
-
-      plotConfigChoiceCurrentIdx = len( plotConfig ) - 1
       plotConfigChoiceCurrent = [ int(0) for i in range( len( plotConfig ) )]
-
-      #for line in filteredResults:
-        #print( line )
 
       try:
 
@@ -157,8 +150,8 @@ class PlotResults(dt.DataSet):
         f_gnuplot.write( "set output '"  + plotCurrentFileName + ".eps'\n" )
         plot_cmd = "plot "
 
+        ## Loop through each plot on the current file (several lines)
         for plot_idx in range( numberLines ):
-
 
           ## Filter results for the current line
           legend = ""
@@ -168,9 +161,8 @@ class PlotResults(dt.DataSet):
             legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " - "
 
           legend = legend[:-3]
-          #for line in currResults:
-            #print( line )
 
+          ## check empty data -> trigger an exception
           if not currResults:
             raise NameError('There is not values plot')
 
@@ -178,15 +170,20 @@ class PlotResults(dt.DataSet):
           dataFileNameList.append( f_data_name )
           f_data = open( f_data_name, 'w' )
           currResultsSort = currResults
-          #currResultsSort = sorted(currResults, key=itemgetter(colX))
           for line in currResultsSort:
-            f_data.write( "%s %s \n" % ( line[colX], line[colY] ) )
+            f_data.write( "%s %s \n" % ( line[self.selectXValues - 1], line[self.selectYValues - 1] ) )
           f_data.close()
+
+          # Please replace the next two line with sort within python
           os.system( "sort -n " + f_data_name + " > " + f_data_name + "_sorted" )
           os.system( "mv " + f_data_name + "_sorted " + f_data_name )
 
           plot_cmd += "'" + f_data_name + "' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
 
+
+          ## setup variables for the next line within the same plot
+          ## try to increment the last config! if not possible
+          ## try to increment the previous one and so one
           for i in reversed(range( len( plotConfig ))):
             if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
               plotConfigChoiceCurrent[i] = 0
@@ -194,7 +191,7 @@ class PlotResults(dt.DataSet):
               plotConfigChoiceCurrent[i] += 1
               break
 
-        ## Close gnuplot script
+        ## Close gnuplot script and run system cmd
         plot_cmd = plot_cmd[:-1]
         f_gnuplot.write( plot_cmd )
         f_gnuplot.close()
@@ -205,6 +202,8 @@ class PlotResults(dt.DataSet):
           os.remove( plotCurrentFileName + ".eps" )
           plotFileNameList.append( plotCurrentFileName + ".pdf" )
 
+
+      ## If an exception is trigger clean up the files and carry on
       except NameError as err:
         print(err)
 
@@ -213,7 +212,7 @@ class PlotResults(dt.DataSet):
       for f in dataFileNameList:
         os.remove( f )
 
-
+      ## setup variables for the next file
       for i in reversed(range( len( fileConfig ))):
         if fileConfigChoiceCurrent[i] ==  len( fileConfigChoice[i] ) - 1:
           fileConfigChoiceCurrent[i] = 0
@@ -221,6 +220,8 @@ class PlotResults(dt.DataSet):
           fileConfigChoiceCurrent[i] += 1
           break
 
+
+    ## Finally convert the set of pdf files in one pdf file with multiple pages
     convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" + plotFileName + ".pdf"
     for f in plotFileNameList:
       convert_cmd += " " + f

@@ -13,9 +13,12 @@ Configs = [ ConfigurationList() for i in range(3)]
 XValues = []
 YValues = []
 
-ResultsFile = "results_example_1"
-PlotFile = "Plot"
-PlotLegendDefault = 2
+
+###################################################################################################################
+# Optional variables
+ResultsFileDefault = "results_example_1"
+PlotFileDefaul = "PlotFile"
+PlotLegendDefault = 4
 
 ###################################################################################################################
 # Base

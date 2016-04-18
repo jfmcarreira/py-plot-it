@@ -5,6 +5,7 @@ import guidata
 import tempfile
 import os.path
 import signal
+import imp
 
 from guidata.qt.QtGui import QMainWindow, QSplitter
 from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
@@ -19,16 +20,41 @@ import guidata.dataset.dataitems as di
 from operator import itemgetter, attrgetter
 
 
-from cfgData import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile, PlotLegendDefault )
-# Debug
-#from cfgData_1 import( ResultsFile, Configs, XValues, YValues, GnuPlotTemplate, PlotFile )
-
-
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-# Global GUI params
-#global ConfigurationFile
-#ConfigurationFile = "cfgData.py"
+ConfigFileName = "cfgData.py"
+
+
+
+
+
+## Read configuration file and retrieve required variables
+f = open(ConfigFileName)
+cfgData = imp.load_source('data', '', f)
+f.close()
+Configs = cfgData.Configs
+XValues = cfgData.XValues
+YValues = cfgData.YValues
+GnuPlotTemplate = cfgData.GnuPlotTemplate
+
+
+## Optional variables from cfg
+if hasattr(cfgData, 'ResultsFileDefault'):
+  ResultsFileDefault = cfgData.ResultsFileDefault
+else:
+  ResultsFileDefault = ""
+
+if hasattr(cfgData, 'plotFileDefault'):
+  plotFileDefault = cfgData.plotFileDefault
+else:
+  plotFileDefault = ""
+
+if hasattr(cfgData, 'PlotLegendDefault'):
+  PlotLegendDefault = cfgData.PlotLegendDefault
+else:
+  PlotLegendDefault = 0
+
+
 ResultsTable = []
 
 
@@ -50,7 +76,10 @@ def readResults(fname):
 class PlotResults(dt.DataSet):
 
   def genPlot(self):
-    global filtResults
+
+    if self.plotFile == "":
+      print( "Empty title!!" )
+      return
 
     XLabel = []
     YLabel = []
@@ -232,8 +261,8 @@ class PlotResults(dt.DataSet):
   #
   # Class definition
   #
-  resultsFile = di.FileOpenItem("Results file", default = ResultsFile )
-  plotFile = di.StringItem("Plot file", default = PlotFile )
+  resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
+  plotFile = di.StringItem("Plot file", default = plotFileDefault )
 
   aAvailableCfg = []
   for cfg in Configs:

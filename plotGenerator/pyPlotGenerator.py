@@ -25,9 +25,6 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 ConfigFileName = "cfgData.py"
 
 
-
-
-
 ## Read configuration file and retrieve required variables
 f = open(ConfigFileName)
 cfgData = imp.load_source('data', '', f)
@@ -44,10 +41,10 @@ if hasattr(cfgData, 'ResultsFileDefault'):
 else:
   ResultsFileDefault = ""
 
-if hasattr(cfgData, 'plotFileDefault'):
-  plotFileDefault = cfgData.plotFileDefault
+if hasattr(cfgData, 'PlotFileDefault'):
+  PlotFileDefault = cfgData.PlotFileDefault
 else:
-  plotFileDefault = ""
+  PlotFileDefault = ""
 
 if hasattr(cfgData, 'PlotLegendDefault'):
   PlotLegendDefault = cfgData.PlotLegendDefault
@@ -262,7 +259,7 @@ class PlotResults(dt.DataSet):
   # Class definition
   #
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
-  plotFile = di.StringItem("Plot file", default = plotFileDefault )
+  plotFile = di.StringItem("Plot file", default = PlotFileDefault )
 
   aAvailableCfg = []
   for cfg in Configs:

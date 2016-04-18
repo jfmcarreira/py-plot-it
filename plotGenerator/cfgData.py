@@ -17,7 +17,7 @@ YValues = []
 ###################################################################################################################
 # Optional variables
 ResultsFileDefault = "results_example"
-#PlotFileDefaul = "PlotFile"
+PlotFileDefault = "PlotFile"
 #PlotLegendDefault = 4
 
 ###################################################################################################################

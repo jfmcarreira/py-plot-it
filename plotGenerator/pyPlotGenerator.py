@@ -6,64 +6,73 @@ import tempfile
 import os.path
 import signal
 import imp
-
 from guidata.qt.QtGui import QMainWindow, QSplitter
 from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
 from guidata.configtools import get_icon
 from guidata.qthelpers import create_action, add_actions, get_std_icon
 from guidata.dataset.qtwidgets import DataSetEditLayout, DataSetShowLayout
 from guidata.dataset.qtitemwidgets import DataSetWidget
-
 import guidata.dataset.datatypes as dt
 import guidata.dataset.dataitems as di
-
 from operator import itemgetter, attrgetter
-
-
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-ConfigFileName = "cfgData.py"
+class ConfigurationList:
+  def __init__(self):
+    self.title = []
+    self.configs = []
+    self.details = []
+    self.name = []
+    self.tab = 0
+    self.use_for_plot = 0
 
 
-## Read configuration file and retrieve required variables
-f = open(ConfigFileName)
-cfgData = imp.load_source('cfgData', ConfigFileName, f)
-f.close()
-Configs = cfgData.Configs
-XValues = cfgData.XValues
-YValues = cfgData.YValues
-GnuPlotTemplate = cfgData.GnuPlotTemplate
+#
+# Define variables
+ResultsTable = []
+ConfigFileName = "cfgData_v2.py"
 
+
+
+with open(ConfigFileName) as f:
+  code = compile(f.read(), ConfigFileName, 'exec')
+  exec(code)
 
 ## Optional variables from cfg
-if hasattr(cfgData, 'ResultsFileDefault'):
-  ResultsFileDefault = cfgData.ResultsFileDefault
-else:
+if not 'ConfigVersion' in globals():
+  ConfigVersion = 1
+if not 'ResultsFileDefault' in globals():
   ResultsFileDefault = ""
-
-if hasattr(cfgData, 'PlotFileDefault'):
-  PlotFileDefault = cfgData.PlotFileDefault
-else:
+if not 'PlotFileDefault' in globals():
   PlotFileDefault = ""
-
-if hasattr(cfgData, 'PlotLegendDefault'):
-  PlotLegendDefault = cfgData.PlotLegendDefault
-else:
+if not 'PlotLegendDefault' in globals():
   PlotLegendDefault = 0
-
-if hasattr(cfgData, 'AxisLimitDefaultX'):
-  AxisLimitDefaultX = cfgData.AxisLimitDefaultX
-else:
+if not 'AxisLimitDefaultX' in globals():
   AxisLimitDefaultX = ""
-
-if hasattr(cfgData, 'AxisLimitDefaultY'):
-  AxisLimitDefaultY = cfgData.AxisLimitDefaultY
-else:
+if not 'AxisLimitDefaultY' in globals():
   AxisLimitDefaultY = ""
 
 
+# Import configs using two methods
+# either write details or configs + names
+ConfigsImport = Configs
+Configs = []
+if ConfigVersion == 1:
+  for i in range( len( ConfigsImport ) ):
+    currConfig = ConfigsImport[i]
+    for j in range( len( ConfigsImport[i].configs ) ):
+      currConfig.details.append( [ ConfigsImport[i].configs[j], ConfigsImport[i].name[j] ] )
+    Configs.append( currConfig )
 
-ResultsTable = []
+elif ConfigVersion == 2:
+  for i in range( len( ConfigsImport ) ):
+    currConfig = ConfigsImport[i]
+    for j in range( len( ConfigsImport[i].details ) ):
+      #print( ConfigsImport[i].details[j] )
+      currConfig.configs.append( ConfigsImport[i].details[j][0] )
+      currConfig.name.append( ConfigsImport[i].details[j][1] )
+    Configs.append( currConfig )
+
 
 
 def filterResults( results, col, value):

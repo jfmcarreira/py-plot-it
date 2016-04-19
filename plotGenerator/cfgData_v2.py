@@ -3,6 +3,7 @@
 ###################################################################################################################
 # Init
 
+ConfigVersion = 2
 Configs = [ ConfigurationList() for i in range(3)]
 XValues = []
 YValues = []
@@ -18,67 +19,51 @@ PlotFileDefault = "PlotFile"
 # Base
 Configs[0].title    = 'Base'
 Configs[0].tab      = 1
-Configs[0].configs  = [ 'lowdelay_P_4R', 'randomaccess',  'randomaccess_SingleSlice', 'lowdelay_P_4R_SingleSlice']
-Configs[0].name     = [ 'Lowdelay P',    'Random Access', 'Random Access Single',     'Lowdelay P Single', ]
+Configs[0].details  = [
+                        ( 'lowdelay_P_4R', 'Lowdelay P' ),
+                        ( 'randomaccess', 'Random Access' ),
+                        ( 'lowdelay_P_4R_SingleSlice', 'Lowdelay P Single' ),
+                        ( 'randomaccess_SingleSlice', 'Random Access Single' ),
+                      ]
 
-
-###################################################################################################################
-# Sequence
+####################################################################################################################
+## Sequence
 
 Configs[1].title    = 'Sequence'
 Configs[1].tab      = 2
-Configs[1].configs  = [ 'seq_kendo_c3',
-                    'seq_book_arrival_c6',
-                    'seq_basketball_drill',
-                    'seq_race',
-                    'seq_bqsquare',
-                    'seq_park',
-                    'seq_tennis',
-                    'seq_kimono',
-                    'seq_people',
-                    'seq_traffic'
-                  ]
-Configs[1].name     = [ 'Kendo',
-                    'Book Arrival',
-                    'Basketball Drill',
-                    'Race Horses',
-                    'BQSquare',
-                    'Park Scene',
-                    'Tennis',
-                    'Kimono',
-                    'People',
-                    'Traffic'
-                  ]
+Configs[1].details  = [
+                        ( 'seq_kendo_c3', 'Kendo', ),
+                        ( 'seq_book_arrival_c6', 'Book Arrival' ),
+                        ( 'seq_basketball_drill', 'Basketball Drill' ),
+                        ( 'seq_race', 'Race Horses' ),
+                        ( 'seq_bqsquare', 'BQSquare' ),
+                        ( 'seq_park', 'Park Scene' ),
+                        ( 'seq_tennis', 'Tennis' ),
+                        ( 'seq_kimono', 'Kimono' ),
+                        ( 'seq_people', 'People' ),
+                        ( 'seq_traffic', 'Traffic' ),
+                      ]
 
-###################################################################################################################
-# Condition
+####################################################################################################################
+## Condition
 
 ConfigsCond = ConfigurationList()
 ConfigsConceal = ConfigurationList()
 
-ConfigsCond.configs = [ 'NoTMVP',
-                        'NoTMVP_IIR_Multi_Ref_Avg',
-                        'NoTMVP_IIR_Multi_Ref_Avg_Weight',
-                        'NoTMVP_ConcRedundantGOPLD10',
-                        'NoTMVP_ConcRedundantGOPLD20',
-                        'NoTMVP_ConcealEncodingGOPLD10',
-                        'NoTMVP_ConcealEncodingGOPLD20',
-                      ]
-ConfigsCond.name    = [ 'Ref',
-                        'MultiAvgW50',
-                        'MultiAvgW75',
-                        'ConcResidue10',
-                        'ConcResidue20',
-                        'ConcStream10',
-                        'ConcStream20',
-                      ]
-
+ConfigsCond.details=[
+                      ( 'NoTMVP','Ref' ),
+                      ( 'NoTMVP_IIR_Multi_Ref_Avg','MultiAvgW50' ),
+                      ( 'NoTMVP_IIR_Multi_Ref_Avg_Weight','MultiAvgW75' ),
+                      ( 'NoTMVP_ConcRedundantGOPLD10','ConcResidue10' ),
+                      ( 'NoTMVP_ConcRedundantGOPLD20','ConcResidue20' ),
+                      ( 'NoTMVP_ConcealEncodingGOPLD10','ConcStream10' ),
+                      ( 'NoTMVP_ConcealEncodingGOPLD20','ConcStream20' ),
+                    ]
 
 Configs[2].title    = 'Condition'
 Configs[2].tab      = 3
-for i in range( len( ConfigsCond.configs ) ):
-    Configs[2].configs.append( ConfigsCond.configs[i]  )
-    Configs[2].name.append( ConfigsCond.name[i] )
+for i in range( len( ConfigsCond.details ) ):
+    Configs[2].details.append( ConfigsCond.details[i]  )
 
 
 ###################################################################################################################

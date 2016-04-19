@@ -138,6 +138,21 @@ class PlotResults(dt.DataSet):
     plotFileName = self.plotFile
 
 
+    ## Init gnuplot script
+    plotFileNameList = []
+    f_gnuplot_name = self.plotFile + ".plt"
+    f_gnuplot = open( f_gnuplot_name, 'w' )
+    f_gnuplot.write( GnuPlotTemplate )
+
+    if XLabel:
+      f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
+    if YLabel:
+      f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
+    if not self.legendPosition == 0:
+      f_gnuplot.write( "set key " + self.legendPosition[self.legendPositionIdx].lower() + "\n\n" )
+    else:
+      f_gnuplot.write( "set key off \n" )
+
     fileConfigChoiceCurrent = [ int(0) for i in range( len( fileConfig ) )]
 
     for file_idx in range( numberPlots ):
@@ -155,90 +170,64 @@ class PlotResults(dt.DataSet):
       plotCurrentTitle = plotCurrentTitle[:-3]
       plotConfigChoiceCurrent = [ int(0) for i in range( len( plotConfig ) )]
 
-      try:
+      # Init gnuplot data point and command
+      plotData = []
+      plotCommand = "plot"
 
-        ## Init gnuplot script
-        dataFileNameList = []
-        f_gnuplot_name = tempfile.NamedTemporaryFile( prefix="gnuplot_").name
-        f_gnuplot = open( f_gnuplot_name, 'w' )
-        f_gnuplot.write( GnuPlotTemplate )
+      ## Loop through each plot on the current file (several lines)
+      for plot_idx in range( numberLines ):
 
-        if XLabel:
-          f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
-        if YLabel:
-          f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
-        if self.legendPosition:
-          f_gnuplot.write( "set key " + self.legendPosition[self.legendPositionIdx].lower() + "\n" )
+        ## Filter results for the current line
+        legend = ""
+        currResults = filteredResults
+        for i in range( len( plotConfig )):
+          currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
+          legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " - "
 
+        legend = legend[:-3]
+
+        ## check empty data -> trigger an exception
+        if not currResults:
+          print("No data to plot! skipping...")
+          continue
+
+        currResultsSort = currResults
+        #currResultsSort.sort( key=lambda x: x[0])
+        for line in currResultsSort:
+          plotData.append( [ line[self.selectXValues - 1], line[self.selectYValues - 1] ] )
+
+
+        #plot_cmd += "'" + f_data_name + "' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
+        plotCommand += " '-' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
+
+        plotData.append( ["e"] )
+
+        ## setup variables for the next line within the same plot
+        ## try to increment the last config! if not possible
+        ## try to increment the previous one and so one
+        for i in reversed(range( len( plotConfig ))):
+          if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
+            plotConfigChoiceCurrent[i] = 0
+          else:
+            plotConfigChoiceCurrent[i] += 1
+            break
+
+      # dump title, output, plot command and data points
+      if not plotCommand == "plot":
+        plotFileNameList.append( plotCurrentFileName ) # keep a list of files to convert
         if self.showTitle:
           f_gnuplot.write( "set title '" + plotCurrentTitle + "'\n" )
-
         f_gnuplot.write( "set output '"  + plotCurrentFileName + ".eps'\n" )
-        plot_cmd = "plot "
-
-        ## Loop through each plot on the current file (several lines)
-        for plot_idx in range( numberLines ):
-
-          ## Filter results for the current line
-          legend = ""
-          currResults = filteredResults
-          for i in range( len( plotConfig )):
-            currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
-            legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " - "
-
-          legend = legend[:-3]
-
-          ## check empty data -> trigger an exception
-          if not currResults:
-            raise NameError('There is not values plot')
-
-          f_data_name = tempfile.NamedTemporaryFile( prefix="data_" ).name
-          dataFileNameList.append( f_data_name )
-          f_data = open( f_data_name, 'w' )
-          currResultsSort = currResults
-          for line in currResultsSort:
-            f_data.write( "%s %s \n" % ( line[self.selectXValues - 1], line[self.selectYValues - 1] ) )
-          f_data.close()
-
-          # Please replace the next two line with sort within python
-          os.system( "sort -n " + f_data_name + " > " + f_data_name + "_sorted" )
-          os.system( "mv " + f_data_name + "_sorted " + f_data_name )
-
-          plot_cmd += "'" + f_data_name + "' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
-
-
-          ## setup variables for the next line within the same plot
-          ## try to increment the last config! if not possible
-          ## try to increment the previous one and so one
-          for i in reversed(range( len( plotConfig ))):
-            if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
-              plotConfigChoiceCurrent[i] = 0
-            else:
-              plotConfigChoiceCurrent[i] += 1
-              break
-
-        ## Close gnuplot script and run system cmd
-        plot_cmd = plot_cmd[:-1]
-        f_gnuplot.write( plot_cmd )
-        f_gnuplot.close()
-        ## Plot and convert
-        os.system( "gnuplot -e \"load '" + f_gnuplot_name + "'\" ")
-        if os.path.isfile( plotCurrentFileName + ".eps" ):
-          os.system( "ps2pdf -dEPSCrop " + plotCurrentFileName + ".eps " + plotCurrentFileName + ".pdf" )
-          os.remove( plotCurrentFileName + ".eps" )
-          plotFileNameList.append( plotCurrentFileName + ".pdf" )
-
-
-      ## If an exception is trigger clean up the files and carry on
-      except NameError as err:
-        print(err)
-
-      ## Clean up files
-      os.remove( f_gnuplot_name )
-      for f in dataFileNameList:
-        os.remove( f )
+        f_gnuplot.write( plotCommand[:-1] + "\n" )
+        for line in plotData:
+          for item in line:
+            f_gnuplot.write( "%s " % (item) )
+          f_gnuplot.write( "\n")
+        f_gnuplot.write( "\n")
 
       ## setup variables for the next file
+      ## try to increment the last config! if not possible
+      ## try to increment the previous one and so one
       for i in reversed(range( len( fileConfig ))):
         if fileConfigChoiceCurrent[i] ==  len( fileConfigChoice[i] ) - 1:
           fileConfigChoiceCurrent[i] = 0
@@ -247,19 +236,29 @@ class PlotResults(dt.DataSet):
           break
 
 
-    ## Finally convert the set of pdf files in one pdf file with multiple pages
+    # close gnuplot script and plot
+    f_gnuplot.close()
+    os.system( "gnuplot -e \"load '" + f_gnuplot_name + "'\" ")
+
+    # Finally convert the set of pdf files in one pdf file with multiple pages
     convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" + plotFileName + ".pdf"
     for f in plotFileNameList:
-      convert_cmd += " " + f
+      os.system( "ps2pdf -dEPSCrop " + f + ".eps " + f + ".pdf" )
+      convert_cmd += " " + f + ".pdf"
     os.system( convert_cmd )
     for f in plotFileNameList:
-      os.remove( f )
+      os.remove( f + ".eps" )
+      os.remove( f + ".pdf" )
+
+    if self.keepPlotScript == 0:
+      os.remove( f_gnuplot_name )
 
   #
   # Class definition
   #
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
-  plotFile = di.StringItem("Plot file", default = PlotFileDefault )
+  plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0, colspan=2)
+  keepPlotScript = di.BoolItem("Keep plot script", default=0).set_pos(col=1, colspan=2)
 
   aAvailableCfg = []
   for cfg in Configs:
@@ -271,7 +270,7 @@ class PlotResults(dt.DataSet):
 
   if len(Configs) > 1:
     cfg = Configs[1]
-    cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0, 1] ).vertical(2)
+    cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0] ).vertical(2)
 
   if len(Configs) > 2:
     cfg = Configs[2]
@@ -281,7 +280,7 @@ class PlotResults(dt.DataSet):
     cfg = Configs[3]
     cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(2)
 
-  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[1, 2] )
+  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] )
 
   legendPosition =["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0, colspan=3)

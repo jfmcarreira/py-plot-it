@@ -72,6 +72,16 @@ def readResults(fname):
 
 class PlotResults(dt.DataSet):
 
+  def dumpAxisLimits(self, axis, axisLimit):
+    if axisLimit:
+      axisLimit = axisLimit.split(',')
+      if len( axisLimit ) == 3:
+        self.gnuplotFile.write( "set " + axis + "tics " + axisLimit[0] + "," + axisLimit[1] + "," + axisLimit[2] + "\n" )
+        self.gnuplotFile.write( "set " + axis + "range [" + axisLimit[0] + ":" + axisLimit[2] + "]\n" )
+      else:
+        self.gnuplotFile.write( "set " + axis + "range [" + axisLimit[0] + ":" + axisLimit[1] + "]\n" )
+
+
   def genPlot(self):
 
     if self.plotFile == "":
@@ -141,7 +151,7 @@ class PlotResults(dt.DataSet):
     ## Init gnuplot script
     plotFileNameList = []
     f_gnuplot_name = self.plotFile + ".plt"
-    f_gnuplot = open( f_gnuplot_name, 'w' )
+    f_gnuplot = self.gnuplotFile = open( f_gnuplot_name, 'w' )
     f_gnuplot.write( GnuPlotTemplate )
 
     if XLabel:
@@ -152,6 +162,9 @@ class PlotResults(dt.DataSet):
       f_gnuplot.write( "set key " + self.legendPosition[self.legendPositionIdx].lower() + "\n\n" )
     else:
       f_gnuplot.write( "set key off \n" )
+
+    self.dumpAxisLimits( "x", self.plotXLim )
+    self.dumpAxisLimits( "y", self.plotYLim )
 
     fileConfigChoiceCurrent = [ int(0) for i in range( len( fileConfig ) )]
 
@@ -257,8 +270,8 @@ class PlotResults(dt.DataSet):
   # Class definition
   #
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
-  plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0, colspan=2)
-  keepPlotScript = di.BoolItem("Keep plot script", default=0).set_pos(col=1, colspan=2)
+  plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0)
+  keepPlotScript = di.BoolItem("Keep plot script", default=0).set_pos(col=1)
 
   aAvailableCfg = []
   for cfg in Configs:
@@ -283,16 +296,20 @@ class PlotResults(dt.DataSet):
   selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] )
 
   legendPosition =["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
-  _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0, colspan=3)
+  _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault-1 )
   showTitle = di.BoolItem("Display plot title")
   _egFig = dt.EndGroup("Figure definition")
-
-  _bgAx = dt.BeginGroup("Axis definition").set_pos(col=3, colspan=3)
-  selectXValues = di.ChoiceItem("X values", XValues)
-  selectYValues = di.ChoiceItem("Y values", YValues)
+  _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
+  selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0)
+  selectYValues = di.ChoiceItem("Y values", YValues).set_pos(col=1)
+  plotXLim = di.StringItem("X axis Limits", default="" ).set_pos(col=0)
+  plotYLim = di.StringItem("Y axis Limits", default="" ).set_pos(col=1)
   _egAx = dt.EndGroup("Axis definition")
 
+
+  # aux_variables
+  gnuplotFile = 0
 
 #class Init(dt.DataSet):
   #resultsFile = di.FileOpenItem("Configuration File", default = ConfigurationFile)

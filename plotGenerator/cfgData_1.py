@@ -16,8 +16,8 @@ YValues = []
 
 ###################################################################################################################
 # Optional variables
-ResultsFileDefault = "results_example_1"
-PlotFileDefaul = "PlotFile"
+ResultsFileDefault = "summary_decoding_single_loss"
+PlotFileDefault = "PlotFile"
 PlotLegendDefault = 4
 
 ###################################################################################################################

@@ -109,7 +109,6 @@ set xtics   font 'TimesNewRoman,16' offset character    0,    0, 0
 set ylabel  font 'TimesNewRoman,18' offset character  0.9,    0, 0
 set ytics   font 'TimesNewRoman,16'
 set key     font 'TimesNewRoman,16'
-
 set key spacing 1  top right width 4
 
 set style line 4 lc 1 lt  1 lw 3 pt  2 ps 1
@@ -121,6 +120,5 @@ set style line 6 lc 8 lt  6 lw 3 pt  8 ps 1
 set style line 7 lc 2 lt  7 lw 3 pt  8 ps 1
 set style line 8 lc 3 lt  8 lw 3 pt  9 ps 1
 set style line 9 lc 4 lt  9 lw 3 pt  10 ps 1
-
 
 """

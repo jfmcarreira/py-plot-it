@@ -54,12 +54,12 @@ else:
 if hasattr(cfgData, 'AxisLimitDefaultX'):
   AxisLimitDefaultX = cfgData.AxisLimitDefaultX
 else:
-  AxisLimitDefaultX = 0
+  AxisLimitDefaultX = ""
 
 if hasattr(cfgData, 'AxisLimitDefaultY'):
   AxisLimitDefaultY = cfgData.AxisLimitDefaultY
 else:
-  AxisLimitDefaultY = 0
+  AxisLimitDefaultY = ""
 
 
 

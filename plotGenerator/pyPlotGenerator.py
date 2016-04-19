@@ -30,7 +30,7 @@ class ConfigurationList:
 #
 # Define variables
 ResultsTable = []
-ConfigFileName = "cfgData_v2.py"
+ConfigFileName = "cfgData.py"
 
 
 ## Configure how to read the results file

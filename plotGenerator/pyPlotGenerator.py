@@ -33,7 +33,23 @@ ResultsTable = []
 ConfigFileName = "cfgData_v2.py"
 
 
+## Configure how to read the results file
+def filterResults( results, col, value):
+  filtResults = []
+  for line in results:
+    if line[col] == value:
+      filtResults.append(line)
+  return filtResults
 
+def readResults(fname):
+  global ResultsTable
+  ResultsTable = []
+  if os.path.isfile(fname):
+    for line in open(fname).readlines():
+      ResultsTable.append(line.split())
+
+
+## Open cfgData
 with open(ConfigFileName) as f:
   code = compile(f.read(), ConfigFileName, 'exec')
   exec(code)
@@ -41,6 +57,8 @@ with open(ConfigFileName) as f:
 ## Optional variables from cfg
 if not 'ConfigVersion' in globals():
   ConfigVersion = 1
+if not 'FilterNonExistent' in globals():
+  FilterNonExistent = 0
 if not 'ResultsFileDefault' in globals():
   ResultsFileDefault = ""
 if not 'PlotFileDefault' in globals():
@@ -51,6 +69,14 @@ if not 'AxisLimitDefaultX' in globals():
   AxisLimitDefaultX = ""
 if not 'AxisLimitDefaultY' in globals():
   AxisLimitDefaultY = ""
+
+
+if ResultsFileDefault:
+  readResults( ResultsFileDefault )
+if not ResultsTable:
+  FilterNonExistent = 0
+if FilterNonExistent:
+  print("Filtering results")
 
 
 # Import configs using two methods
@@ -68,26 +94,14 @@ elif ConfigVersion == 2:
   for i in range( len( ConfigsImport ) ):
     currConfig = ConfigsImport[i]
     for j in range( len( ConfigsImport[i].details ) ):
-      #print( ConfigsImport[i].details[j] )
-      currConfig.configs.append( ConfigsImport[i].details[j][0] )
-      currConfig.name.append( ConfigsImport[i].details[j][1] )
+      if FilterNonExistent == 1:
+        currResults = filterResults( ResultsTable, ConfigsImport[i].tab, ConfigsImport[i].details[j][0] )
+      else:
+        currResults = 1
+      if currResults:
+        currConfig.configs.append( ConfigsImport[i].details[j][0] )
+        currConfig.name.append( ConfigsImport[i].details[j][1] )
     Configs.append( currConfig )
-
-
-
-def filterResults( results, col, value):
-  filtResults = []
-  for line in results:
-    if line[col] == value:
-      filtResults.append(line)
-  return filtResults
-
-
-def readResults(fname):
-  global ResultsTable
-  ResultsTable = []
-  for line in open(fname).readlines():
-    ResultsTable.append(line.split())
 
 
 class PlotResults(dt.DataSet):

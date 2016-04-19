@@ -14,6 +14,7 @@ YValues = []
 ResultsFileDefault = "results_example"
 PlotFileDefault = "PlotFile"
 #PlotLegendDefault = 4
+FilterNonExistent = 1
 
 ###################################################################################################################
 # Base

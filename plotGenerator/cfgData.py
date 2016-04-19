@@ -93,7 +93,8 @@ for i in range( len( ConfigsCond.configs ) ):
 XValues = [(6, "Bitrate [kbps]"), (7, "Packet Loss Ratio [%]") ]
 YValues = [(7, "PSNR [dB]") ]
 
-
+#AxisLimitDefaultX = "0, 5, 100"
+#AxisLimitDefaultY = "30, 1, 42"
 
 ###################################################################################################################
 # Gnuplot template

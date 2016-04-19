@@ -27,7 +27,7 @@ ConfigFileName = "cfgData.py"
 
 ## Read configuration file and retrieve required variables
 f = open(ConfigFileName)
-cfgData = imp.load_source('data', '', f)
+cfgData = imp.load_source('cfgData', ConfigFileName, f)
 f.close()
 Configs = cfgData.Configs
 XValues = cfgData.XValues

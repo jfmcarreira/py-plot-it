@@ -51,6 +51,17 @@ if hasattr(cfgData, 'PlotLegendDefault'):
 else:
   PlotLegendDefault = 0
 
+if hasattr(cfgData, 'AxisLimitDefaultX'):
+  AxisLimitDefaultX = cfgData.AxisLimitDefaultX
+else:
+  AxisLimitDefaultX = 0
+
+if hasattr(cfgData, 'AxisLimitDefaultY'):
+  AxisLimitDefaultY = cfgData.AxisLimitDefaultY
+else:
+  AxisLimitDefaultY = 0
+
+
 
 ResultsTable = []
 
@@ -303,8 +314,8 @@ class PlotResults(dt.DataSet):
   _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0)
   selectYValues = di.ChoiceItem("Y values", YValues).set_pos(col=1)
-  plotXLim = di.StringItem("X axis Limits", default="" ).set_pos(col=0)
-  plotYLim = di.StringItem("Y axis Limits", default="" ).set_pos(col=1)
+  plotXLim = di.StringItem("X axis Limits", default=AxisLimitDefaultX ).set_pos(col=0)
+  plotYLim = di.StringItem("Y axis Limits", default=AxisLimitDefaultY ).set_pos(col=1)
   _egAx = dt.EndGroup("Axis definition")
 
 

@@ -313,26 +313,26 @@ class PlotResults(dt.DataSet):
 
   if len(Configs) > 0:
     cfg = Configs[0]
-    cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0] ).vertical(2)
+    cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
 
   if len(Configs) > 1:
     cfg = Configs[1]
-    cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0] ).vertical(2)
+    cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
 
   if len(Configs) > 2:
     cfg = Configs[2]
-    cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[0, 2] ).vertical(2)
+    cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
 
   if len(Configs) > 3:
     cfg = Configs[3]
-    cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(2)
+    cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
 
   selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] )
 
   legendPosition =["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault-1 )
-  showTitle = di.BoolItem("Display plot title")
+  showTitle = di.BoolItem("Display plot title", default=True )
   _egFig = dt.EndGroup("Figure definition")
   _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0)

@@ -24,20 +24,23 @@ class ConfigurationList:
     self.details = []
     self.name = []
     self.tab = 0
+    self.values_tab = -1
     self.use_for_plot = 0
 
 
 #
 # Define variables
 ResultsTable = []
-ConfigFileName = "cfgData.py"
+#ConfigFileName = "cfgData.py"
+ConfigFileName = "cfgData_v2.py"
+#ConfigFileName = "cfgData_v3.py"
 
 
 ## Configure how to read the results file
 def filterResults( results, col, value):
   filtResults = []
   for line in results:
-    if line[col] == value:
+    if line[col - 1] == value:
       filtResults.append(line)
   return filtResults
 
@@ -63,6 +66,8 @@ if not 'ResultsFileDefault' in globals():
   ResultsFileDefault = ""
 if not 'PlotFileDefault' in globals():
   PlotFileDefault = ""
+if not 'KeepPlotFileDefault' in globals():
+  KeepPlotFileDefault = 0
 if not 'PlotLegendDefault' in globals():
   PlotLegendDefault = 0
 if not 'AxisLimitDefaultX' in globals():
@@ -159,6 +164,8 @@ class PlotResults(dt.DataSet):
           use_for_plot = 1
           break
 
+
+
       if use_for_plot == 0:
         fileConfig.append( Configs[i] )
         fileConfigChoice.append( aCfgChoice[i] )
@@ -167,7 +174,8 @@ class PlotResults(dt.DataSet):
         plotConditions += 1
         plotConfig.append( Configs[i] )
         plotConfigChoice.append( aCfgChoice[i] )
-        numberLines *= len( aCfgChoice[i] )
+        if self.selectXValues != Configs[i].tab and self.selectXValues != Configs[i].values_tab:
+          numberLines *= len( aCfgChoice[i] )
 
     if numberPlots == 0 or plotConditions == 0:
       return
@@ -227,32 +235,59 @@ class PlotResults(dt.DataSet):
         ## Filter results for the current line
         legend = ""
         currResults = filteredResults
+        applyFiltering = False
         for i in range( len( plotConfig )):
+          if self.selectXValues == plotConfig[i].tab or self.selectXValues == plotConfig[i].values_tab:
+            applyFiltering = True
+            continue
           currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
           legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " - "
 
-        legend = legend[:-3]
+
+        plotResults = []
+        if applyFiltering:
+          for i in range( len( plotConfig )):
+            if self.selectXValues != plotConfig[i].tab and self.selectXValues != plotConfig[i].values_tab:
+              continue
+            for j in plotConfigChoice[i]:
+              for line in currResults:
+                if line[ plotConfig[i].tab - 1 ] == plotConfig[i].configs[j]:
+                  if self.showBars:
+                    plotResults.append( [ "\"" + plotConfig[i].name[j] + "\"", line[self.selectYValues - 1] ] )
+                  else:
+                    plotResults.append( [ line[self.selectXValues - 1], line[self.selectYValues - 1] ] )
+        else:
+          for line in currResults:
+            plotResults.append( [ line[self.selectXValues - 1], line[self.selectYValues - 1] ] )
+
+
+        if legend != "":
+          legend = legend[:-3]
 
         ## check empty data -> trigger an exception
-        if not currResults:
+        if not plotResults:
           print("No data to plot! skipping...")
           continue
 
-        currResultsSort = currResults
+        plotResultsSort = plotResults
         #currResultsSort.sort( key=lambda x: x[0])
-        for line in currResultsSort:
-          plotData.append( [ line[self.selectXValues - 1], line[self.selectYValues - 1] ] )
-
-
-        #plot_cmd += "'" + f_data_name + "' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
-        plotCommand += " '-' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
-
+        for line in plotResultsSort:
+          plotData.append( line )
         plotData.append( ["e"] )
+
+
+        if self.showBars:
+          plotCommand += " '-' using 2:xtic(1)  w boxes ls " + str( plot_idx + 100 + 1 ) + ","
+        else:
+          plotCommand += " '-' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
+
 
         ## setup variables for the next line within the same plot
         ## try to increment the last config! if not possible
         ## try to increment the previous one and so one
         for i in reversed(range( len( plotConfig ))):
+          if self.selectXValues == plotConfig[i].tab or self.selectXValues == plotConfig[i].values_tab:
+            continue
           if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
             plotConfigChoiceCurrent[i] = 0
           else:
@@ -305,7 +340,7 @@ class PlotResults(dt.DataSet):
   #
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
   plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0)
-  keepPlotScript = di.BoolItem("Keep plot script", default=0).set_pos(col=1)
+  keepPlotScript = di.BoolItem("Keep plot script", default=KeepPlotFileDefault ).set_pos(col=1)
 
   aAvailableCfg = []
   for cfg in Configs:
@@ -329,10 +364,11 @@ class PlotResults(dt.DataSet):
 
   selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] )
 
-  legendPosition =["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
+  legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
-  legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault-1 )
+  legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
   showTitle = di.BoolItem("Display plot title", default=True )
+  showBars = di.BoolItem("Generate bar plot", default=False )
   _egFig = dt.EndGroup("Figure definition")
   _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0)

@@ -4,7 +4,7 @@
 # Init
 
 ConfigVersion = 2
-Configs = [ ConfigurationList() for i in range(3)]
+Configs = [ ConfigurationList() for i in range(4)]
 XValues = []
 YValues = []
 
@@ -12,14 +12,15 @@ YValues = []
 ###################################################################################################################
 # Optional variables
 ResultsFileDefault = "results_example"
-PlotFileDefault = "PlotFile"
-#PlotLegendDefault = 4
+PlotFileDefault = "PlotQuality"
+KeepPlotFileDefault = 1
+PlotLegendDefault = 0
 FilterNonExistent = 1
 
 ###################################################################################################################
 # Base
 Configs[0].title    = 'Base'
-Configs[0].tab      = 1
+Configs[0].tab      = 2
 Configs[0].details  = [
                         ( 'lowdelay_P_4R', 'Lowdelay P' ),
                         ( 'randomaccess', 'Random Access' ),
@@ -31,7 +32,7 @@ Configs[0].details  = [
 ## Sequence
 
 Configs[1].title    = 'Sequence'
-Configs[1].tab      = 2
+Configs[1].tab      = 3
 Configs[1].details  = [
                         ( 'seq_kendo_c3', 'Kendo', ),
                         ( 'seq_book_arrival_c6', 'Book Arrival' ),
@@ -62,9 +63,24 @@ ConfigsCond.details=[
                     ]
 
 Configs[2].title    = 'Condition'
-Configs[2].tab      = 3
+Configs[2].tab      = 4
 for i in range( len( ConfigsCond.details ) ):
     Configs[2].details.append( ConfigsCond.details[i]  )
+
+
+####################################################################################################################
+## QP/Bitrate
+
+Configs[3].title      = 'QP/Bitrate'
+Configs[3].tab        = 5
+Configs[3].values_tab = 6
+Configs[3].details    = [
+                          ( 'qp_22', 'QP 22' ),
+                          ( 'qp_27', 'QP 27' ),
+                          ( 'qp_32', 'QP 32' ),
+                          ( 'qp_37', 'QP 37' ),
+                          ( 'rate_single', 'Single' ),
+                        ]
 
 
 ###################################################################################################################
@@ -91,6 +107,8 @@ set ylabel  font 'TimesNewRoman,18' offset character  0.9,    0, 0
 set ytics   font 'TimesNewRoman,16'
 set key     font 'TimesNewRoman,16'
 set key spacing 1  top right width 4
+
+set xtic rotate by -45 scale 0.1
 
 set style line 4 lc 1 lt  1 lw 3 pt  2 ps 1
 set style line 2 lc 2 lt  2 lw 3 pt  3 ps 1

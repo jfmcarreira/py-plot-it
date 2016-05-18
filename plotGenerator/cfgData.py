@@ -18,7 +18,7 @@ FilterNonExistent = 0
 ###################################################################################################################
 # Base
 Configs[0].title    = 'Base'
-Configs[0].tab      = 1
+Configs[0].tab      = 2
 Configs[0].configs  = [ 'lowdelay_P_4R', 'randomaccess',  'randomaccess_SingleSlice', 'lowdelay_P_4R_SingleSlice']
 Configs[0].name     = [ 'Lowdelay P',    'Random Access', 'Random Access Single',     'Lowdelay P Single', ]
 
@@ -27,7 +27,7 @@ Configs[0].name     = [ 'Lowdelay P',    'Random Access', 'Random Access Single'
 # Sequence
 
 Configs[1].title    = 'Sequence'
-Configs[1].tab      = 2
+Configs[1].tab      = 3
 Configs[1].configs  = [ 'seq_kendo_c3',
                     'seq_book_arrival_c6',
                     'seq_basketball_drill',
@@ -76,7 +76,7 @@ ConfigsCond.name    = [ 'Ref',
 
 
 Configs[2].title    = 'Condition'
-Configs[2].tab      = 3
+Configs[2].tab      = 4
 for i in range( len( ConfigsCond.configs ) ):
     Configs[2].configs.append( ConfigsCond.configs[i]  )
     Configs[2].name.append( ConfigsCond.name[i] )

@@ -31,8 +31,8 @@ class ConfigurationList:
 #
 # Define variables
 ResultsTable = []
-#ConfigFileName = "cfgData.py"
-ConfigFileName = "cfgData_v2.py"
+ConfigFileName = "cfgData.py"
+#ConfigFileName = "cfgData_v2.py"
 #ConfigFileName = "cfgData_v3.py"
 
 
@@ -219,7 +219,8 @@ class PlotResults(dt.DataSet):
       for i in range( len( fileConfig )):
           filteredResults = filterResults( filteredResults, fileConfig[i].tab, fileConfig[i].configs[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] )
           plotCurrentFileName += fileConfig[i].configs[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] + "_"
-          plotCurrentTitle += fileConfig[i].name[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] + " - "
+          if fileConfig[i].name[fileConfigChoice[i][fileConfigChoiceCurrent[i]]]:
+            plotCurrentTitle += fileConfig[i].name[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] + " - "
 
       plotCurrentFileName = plotCurrentFileName[:-1]
       plotCurrentTitle = plotCurrentTitle[:-3]

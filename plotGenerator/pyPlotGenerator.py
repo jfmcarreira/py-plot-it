@@ -26,31 +26,10 @@ class ConfigurationList:
     self.tab = 0
     self.values_tab = -1
     self.use_for_plot = 0
+    self.selectAll = 0
 
 
-#
-# Define variables
-ResultsTable = []
 ConfigFileName = "cfgData.py"
-#ConfigFileName = "cfgData_v2.py"
-#ConfigFileName = "cfgData_v3.py"
-
-
-## Configure how to read the results file
-def filterResults( results, col, value):
-  filtResults = []
-  for line in results:
-    if line[col - 1] == value:
-      filtResults.append(line)
-  return filtResults
-
-def readResults(fname):
-  global ResultsTable
-  ResultsTable = []
-  if os.path.isfile(fname):
-    for line in open(fname).readlines():
-      ResultsTable.append(line.split())
-
 
 ## Open cfgData
 with open(ConfigFileName) as f:
@@ -76,13 +55,37 @@ if not 'AxisLimitDefaultY' in globals():
   AxisLimitDefaultY = ""
 
 
-if ResultsFileDefault:
-  readResults( ResultsFileDefault )
+
+## Configure how to read the results file
+def filterResults( results, col, value):
+  filtResults = []
+  for line in results:
+    if line[col - 1] == value:
+      filtResults.append(line)
+  return filtResults
+
+## Configure how to read the results file
+def filterSeveralResults( results, col, values):
+  filtResults = []
+  for line in results:
+    for v in values:
+      if line[col - 1] == v:
+        filtResults.append(line)
+        break
+  return filtResults
+
+def readResults(fname):
+  if os.path.isfile(fname):
+    print("Reading results!!")
+    for line in open(fname).readlines():
+      ResultsTable.append(line.split())
+
+ResultsTable = []
+readResults(ResultsFileDefault)
 if not ResultsTable:
   FilterNonExistent = 0
 if FilterNonExistent:
   print("Filtering results")
-
 
 # Import configs using two methods
 # either write details or configs + names
@@ -108,8 +111,9 @@ elif ConfigVersion == 2:
         currConfig.name.append( ConfigsImport[i].details[j][1] )
     Configs.append( currConfig )
 
-
 class PlotResults(dt.DataSet):
+
+
 
   def dumpAxisLimits(self, axis, axisLimit):
     if axisLimit:
@@ -159,23 +163,28 @@ class PlotResults(dt.DataSet):
     for i in range( len( Configs )):
       exec("aCfgChoice.append( self.cfgChoice%d )" % (i) )
       use_for_plot = 0
+      skip_filtering = 0
       for j in self.selectPlotCfg:
         if Configs[i].title == self.aAvailableCfg[j]:
           use_for_plot = 1
           break
 
+      for j in self.skipFilteringPlotCfg:
+        if Configs[i].title == self.aAvailableCfg[j]:
+          skip_filtering = 1
+          break
 
-
-      if use_for_plot == 0:
-        fileConfig.append( Configs[i] )
-        fileConfigChoice.append( aCfgChoice[i] )
-        numberPlots *= len( aCfgChoice[i] )
-      else:
-        plotConditions += 1
-        plotConfig.append( Configs[i] )
-        plotConfigChoice.append( aCfgChoice[i] )
-        if self.selectXValues != Configs[i].tab and self.selectXValues != Configs[i].values_tab:
-          numberLines *= len( aCfgChoice[i] )
+      if not skip_filtering:
+        if use_for_plot == 0:
+          fileConfig.append( Configs[i] )
+          fileConfigChoice.append( aCfgChoice[i] )
+          numberPlots *= len( aCfgChoice[i] )
+        else:
+          plotConditions += 1
+          plotConfig.append( Configs[i] )
+          plotConfigChoice.append( aCfgChoice[i] )
+          if self.selectXValues != Configs[i].tab and self.selectXValues != Configs[i].values_tab:
+            numberLines *= len( aCfgChoice[i] )
 
     if numberPlots == 0 or plotConditions == 0:
       return
@@ -183,7 +192,17 @@ class PlotResults(dt.DataSet):
     print( "Generation %d plots with %d lines!" % (numberPlots, numberLines) )
     print( "Using columns %d vs %d" % (self.selectXValues - 1, self.selectYValues - 1) )
 
-    readResults( self.resultsFile )
+    if not ResultsTable:
+      readResults( self.resultsFile )
+
+
+    configChoiceCurrent = [ int(0) for i in range( len( Configs ) )]
+    preFilteredResults = ResultsTable
+    for i in range( len( Configs )):
+      configList = []
+      for j in aCfgChoice[i]:
+        configList.append( Configs[i].configs[j] )
+      preFilteredResults = filterSeveralResults( preFilteredResults, Configs[i].tab, configList )
 
     catIdx = 0
     plotFileNameList = []
@@ -336,9 +355,11 @@ class PlotResults(dt.DataSet):
     if self.keepPlotScript == 0:
       os.remove( f_gnuplot_name )
 
-  #
+
+  ############################################################################################
   # Class definition
-  #
+  ############################################################################################
+
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
   plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0)
   keepPlotScript = di.BoolItem("Keep plot script", default=KeepPlotFileDefault ).set_pos(col=1)
@@ -349,21 +370,34 @@ class PlotResults(dt.DataSet):
 
   if len(Configs) > 0:
     cfg = Configs[0]
-    cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    if cfg.selectAll == 1:
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+    else:
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
 
   if len(Configs) > 1:
     cfg = Configs[1]
-    cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    if cfg.selectAll == 1:
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+    else:
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
 
   if len(Configs) > 2:
     cfg = Configs[2]
-    cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    if cfg.selectAll == 1:
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+    else:
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
 
   if len(Configs) > 3:
     cfg = Configs[3]
-    cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    if cfg.selectAll == 1:
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+    else:
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
 
   selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] )
+  skipFilteringPlotCfg = di.MultipleChoiceItem( "Skip Categories", aAvailableCfg, default=[0] )
 
   legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
@@ -378,12 +412,9 @@ class PlotResults(dt.DataSet):
   plotYLim = di.StringItem("Y axis Limits", default=AxisLimitDefaultY ).set_pos(col=1)
   _egAx = dt.EndGroup("Axis definition")
 
-
   # aux_variables
   gnuplotFile = 0
 
-#class Init(dt.DataSet):
-  #resultsFile = di.FileOpenItem("Configuration File", default = ConfigurationFile)
 
 
 if __name__ == '__main__':
@@ -411,3 +442,4 @@ if __name__ == '__main__':
 
 
 
+# kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;

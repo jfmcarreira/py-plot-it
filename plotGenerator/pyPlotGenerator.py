@@ -8,6 +8,12 @@ import signal
 import imp
 from guidata.qt.QtGui import QMainWindow, QSplitter
 from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
+from guidata.dataset.datatypes import (DataSet, BeginGroup, EndGroup,
+                                       BeginTabGroup, EndTabGroup)
+from guidata.dataset.dataitems import (ChoiceItem, FloatItem, StringItem,
+                                       DirectoryItem, FileOpenItem, MultipleChoiceItem)
+
+
 from guidata.configtools import get_icon
 from guidata.qthelpers import create_action, add_actions, get_std_icon
 from guidata.dataset.qtwidgets import DataSetEditLayout, DataSetShowLayout
@@ -232,7 +238,7 @@ class PlotResults(dt.DataSet):
     for file_idx in range( numberPlots ):
 
       ## Filter the result set for the different line curves of the current plot
-      filteredResults = ResultsTable;
+      filteredResults = preFilteredResults;
       plotCurrentFileName = ""
       plotCurrentTitle = ""
       for i in range( len( fileConfig )):
@@ -355,7 +361,6 @@ class PlotResults(dt.DataSet):
     if self.keepPlotScript == 0:
       os.remove( f_gnuplot_name )
 
-
   ############################################################################################
   # Class definition
   ############################################################################################
@@ -367,6 +372,15 @@ class PlotResults(dt.DataSet):
   aAvailableCfg = []
   for cfg in Configs:
     aAvailableCfg.append( cfg.title )
+
+  #cfgChoice = []
+  #for cfg in Configs:
+    #if cfg.selectAll == 1:
+      #currentCfgChoice = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+    #else:
+      #currentCfgChoice = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
+    #cfgChoice.append( currentCfgChoice )
+
 
   if len(Configs) > 0:
     cfg = Configs[0]
@@ -392,12 +406,21 @@ class PlotResults(dt.DataSet):
   if len(Configs) > 3:
     cfg = Configs[3]
     if cfg.selectAll == 1:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=0)
     else:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3).set_pos(col=0)
 
-  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] )
-  skipFilteringPlotCfg = di.MultipleChoiceItem( "Skip Categories", aAvailableCfg, default=[0] )
+  if len(Configs) > 4:
+    cfg = Configs[4]
+    if cfg.selectAll == 1:
+      cfgChoice4 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=1)
+    else:
+      cfgChoice4 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3).set_pos(col=1)
+
+  _bgFig = dt.BeginGroup("Plotting definition").set_pos(col=0)
+  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] ).set_pos(col=0)
+  skipFilteringPlotCfg = di.MultipleChoiceItem( "Skip Categories", aAvailableCfg, default=[] ).set_pos(col=1)
+  _egFig = dt.EndGroup("Plotting definition")
 
   legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
@@ -405,6 +428,7 @@ class PlotResults(dt.DataSet):
   showTitle = di.BoolItem("Display plot title", default=True )
   showBars = di.BoolItem("Generate bar plot", default=False )
   _egFig = dt.EndGroup("Figure definition")
+
   _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0)
   selectYValues = di.ChoiceItem("Y values", YValues).set_pos(col=1)
@@ -414,8 +438,6 @@ class PlotResults(dt.DataSet):
 
   # aux_variables
   gnuplotFile = 0
-
-
 
 if __name__ == '__main__':
 
@@ -438,6 +460,8 @@ if __name__ == '__main__':
       plts.genPlot()
     else:
       break;
+
+
 
 
 

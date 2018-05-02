@@ -33,6 +33,7 @@ class ConfigurationList:
     self.values_tab = -1
     self.use_for_plot = 0
     self.selectAll = 0
+    self.showLabels = 0
 
 
 ConfigFileName = "cfgData.py"
@@ -118,8 +119,6 @@ elif ConfigVersion == 2:
     Configs.append( currConfig )
 
 class PlotResults(dt.DataSet):
-
-
 
   def dumpAxisLimits(self, axis, axisLimit):
     if axisLimit:
@@ -289,6 +288,7 @@ class PlotResults(dt.DataSet):
 
         if legend != "":
           legend = legend[:-3]
+          legend = legend.replace('_', '\_')
 
         ## check empty data -> trigger an exception
         if not plotResults:
@@ -364,7 +364,6 @@ class PlotResults(dt.DataSet):
   ############################################################################################
   # Class definition
   ############################################################################################
-
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
   plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0)
   keepPlotScript = di.BoolItem("Keep plot script", default=KeepPlotFileDefault ).set_pos(col=1)
@@ -384,38 +383,58 @@ class PlotResults(dt.DataSet):
 
   if len(Configs) > 0:
     cfg = Configs[0]
-    if cfg.selectAll == 1:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(4)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    else:
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(4)
 
   if len(Configs) > 1:
     cfg = Configs[1]
-    if cfg.selectAll == 1:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(4)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    else:
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(4)
 
   if len(Configs) > 2:
     cfg = Configs[2]
-    if cfg.selectAll == 1:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(2)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    else:
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(2)
 
   if len(Configs) > 3:
     cfg = Configs[3]
-    if cfg.selectAll == 1:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=0)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3).set_pos(col=0)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=0)
+    else:
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(3).set_pos(col=0)
 
   if len(Configs) > 4:
     cfg = Configs[4]
-    if cfg.selectAll == 1:
-      cfgChoice4 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=1)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice4 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3).set_pos(col=1)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice4 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=1)
+    else:
+      cfgChoice4 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(3).set_pos(col=1)
 
   _bgFig = dt.BeginGroup("Plotting definition").set_pos(col=0)
   selectPlotCfg = di.MultipleChoiceItem( "Plot Categories (Define which categories define the plotting lines)", aAvailableCfg, default=[2] ).set_pos(col=0)

@@ -385,23 +385,23 @@ class PlotResults(dt.DataSet):
   if len(Configs) > 0:
     cfg = Configs[0]
     if cfg.selectAll == 1:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
     else:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(4)
 
   if len(Configs) > 1:
     cfg = Configs[1]
     if cfg.selectAll == 1:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
     else:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(4)
 
   if len(Configs) > 2:
     cfg = Configs[2]
     if cfg.selectAll == 1:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
     else:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(2)
 
   if len(Configs) > 3:
     cfg = Configs[3]
@@ -418,8 +418,8 @@ class PlotResults(dt.DataSet):
       cfgChoice4 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3).set_pos(col=1)
 
   _bgFig = dt.BeginGroup("Plotting definition").set_pos(col=0)
-  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories", aAvailableCfg, default=[2] ).set_pos(col=0)
-  skipFilteringPlotCfg = di.MultipleChoiceItem( "Skip Categories", aAvailableCfg, default=[] ).set_pos(col=1)
+  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories (Define which categories define the plotting lines)", aAvailableCfg, default=[2] ).set_pos(col=0)
+  skipFilteringPlotCfg = di.MultipleChoiceItem( "Categories not filtered (Define which category will be plotted )", aAvailableCfg, default=[] ).set_pos(col=1)
   _egFig = dt.EndGroup("Plotting definition")
 
   legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]

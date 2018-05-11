@@ -23,6 +23,8 @@ import guidata.dataset.dataitems as di
 from operator import itemgetter, attrgetter
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+
+
 class ConfigurationList:
   def __init__(self):
     self.title = []
@@ -33,11 +35,18 @@ class ConfigurationList:
     self.values_tab = -1
     self.use_for_plot = 0
     self.selectAll = 0
+    self.showLabels = 0
 
 
 ConfigFileName = "cfgData.py"
 
-## Open cfgData
+
+
+############################################################################################
+# Read configuration
+############################################################################################
+#def readConfigFiles(self):
+
 with open(ConfigFileName) as f:
   code = compile(f.read(), ConfigFileName, 'exec')
   exec(code)
@@ -60,6 +69,13 @@ if not 'AxisLimitDefaultX' in globals():
 if not 'AxisLimitDefaultY' in globals():
   AxisLimitDefaultY = ""
 
+if not 'XValueDefault' in globals():
+  XValueDefault = 0
+if not 'YValueDefault' in globals():
+  YValueDefault = 0
+
+if not 'GenerateBarPlotDefault' in globals():
+  GenerateBarPlotDefault = 0
 
 
 ## Configure how to read the results file
@@ -119,8 +135,6 @@ elif ConfigVersion == 2:
 
 class PlotResults(dt.DataSet):
 
-
-
   def dumpAxisLimits(self, axis, axisLimit):
     if axisLimit:
       axisLimit = axisLimit.split(',')
@@ -162,6 +176,9 @@ class PlotResults(dt.DataSet):
     plotConfig       = []
     plotConfigChoice = []
 
+    # Bar plot specific
+    barPlotLabelsCfg = []
+
     numberPlots = 1
     plotConditions = 0
     numberLines = 1
@@ -177,6 +194,9 @@ class PlotResults(dt.DataSet):
 
       for j in self.skipFilteringPlotCfg:
         if Configs[i].title == self.aAvailableCfg[j]:
+          if Configs[i].tab == self.selectXValues:
+            for label in Configs[i].name:
+              barPlotLabelsCfg.append( label )
           skip_filtering = 1
           break
 
@@ -197,6 +217,9 @@ class PlotResults(dt.DataSet):
 
     print( "Generation %d plots with %d lines!" % (numberPlots, numberLines) )
     print( "Using columns %d vs %d" % (self.selectXValues - 1, self.selectYValues - 1) )
+
+    if self.showBars:
+      print(barPlotLabelsCfg)
 
     if not ResultsTable:
       readResults( self.resultsFile )
@@ -221,14 +244,29 @@ class PlotResults(dt.DataSet):
     f_gnuplot = self.gnuplotFile = open( f_gnuplot_name, 'w' )
     f_gnuplot.write( GnuPlotTemplate )
 
-    if XLabel:
+    if self.showBars == True:
+      f_gnuplot.write( GnuPlotTemplateBarPlot )
+
+
+    if XLabel and not self.showBars:
       f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
     if YLabel:
       f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
+
+    # Legend configuration
+    gnuplotKeyConfiguration = ""
     if not self.legendPosition == 0:
-      f_gnuplot.write( "set key " + self.legendPosition[self.legendPositionIdx].lower() + "\n\n" )
+      keyPosition = self.legendPosition[self.legendPositionIdx].lower();
+
+      gnuplotKeyConfiguration += "set key " + keyPosition
+      if "left" in keyPosition:
+        gnuplotKeyConfiguration += " Left reverse" # swap label and markers
+
     else:
-      f_gnuplot.write( "set key off \n" )
+      gnuplotKeyConfiguration += "set key off"
+
+    f_gnuplot.write( gnuplotKeyConfiguration + "\n\n" )
+
 
     self.dumpAxisLimits( "x", self.plotXLim )
     self.dumpAxisLimits( "y", self.plotYLim )
@@ -255,6 +293,8 @@ class PlotResults(dt.DataSet):
       plotData = []
       plotCommand = "plot"
 
+      firstPlot = True
+
       ## Loop through each plot on the current file (several lines)
       for plot_idx in range( numberLines ):
 
@@ -269,8 +309,11 @@ class PlotResults(dt.DataSet):
           currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
           legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " - "
 
+        #print("Applying filtering: " + str(applyFiltering) )
 
         plotResults = []
+        barDataIndex = 0
+
         if applyFiltering:
           for i in range( len( plotConfig )):
             if self.selectXValues != plotConfig[i].tab and self.selectXValues != plotConfig[i].values_tab:
@@ -278,17 +321,28 @@ class PlotResults(dt.DataSet):
             for j in plotConfigChoice[i]:
               for line in currResults:
                 if line[ plotConfig[i].tab - 1 ] == plotConfig[i].configs[j]:
+                  currPlotData = [ line[self.selectYValues - 1] ]
                   if self.showBars:
-                    plotResults.append( [ "\"" + plotConfig[i].name[j] + "\"", line[self.selectYValues - 1] ] )
+                    if firstPlot == True:
+                      currPlotData.append( "\"" + barPlotLabelsCfg[barDataIndex] + "\"" )
                   else:
-                    plotResults.append( [ line[self.selectXValues - 1], line[self.selectYValues - 1] ] )
+                    currPlotData.append( line[self.selectXValues - 1] )
+                  barDataIndex += 1
+                  plotResults.append( currPlotData )
         else:
           for line in currResults:
-            plotResults.append( [ line[self.selectXValues - 1], line[self.selectYValues - 1] ] )
-
+            currPlotData = [ line[self.selectYValues - 1] ]
+            if self.showBars:
+              if firstPlot == True:
+                currPlotData.append( "\"" + barPlotLabelsCfg[barDataIndex] + "\"" )
+            else:
+              currPlotData.append( line[self.selectXValues - 1] )
+            barDataIndex += 1
+            plotResults.append( currPlotData )
 
         if legend != "":
           legend = legend[:-3]
+          legend = legend.replace('_', '\_')
 
         ## check empty data -> trigger an exception
         if not plotResults:
@@ -301,11 +355,17 @@ class PlotResults(dt.DataSet):
           plotData.append( line )
         plotData.append( ["e"] )
 
-
         if self.showBars:
-          plotCommand += " '-' using 2:xtic(1)  w boxes ls " + str( plot_idx + 100 + 1 ) + ","
+          if firstPlot == True:
+            plotCommand += " '-' using 1:xtic(2)"
+          else:
+            plotCommand += " '-' using 1"
+          plotCommand += "ls " + str( plot_idx + 100 )
+          #plotCommand += " ti col"
         else:
-          plotCommand += " '-' using 1:2 title '" + legend + "' w lp ls " + str( plot_idx + 1 ) + ","
+          plotCommand += " '-' using 2:1 w lp ls " + str( plot_idx + 1 )
+
+        plotCommand += " title '" + legend + "',"
 
 
         ## setup variables for the next line within the same plot
@@ -343,6 +403,8 @@ class PlotResults(dt.DataSet):
           fileConfigChoiceCurrent[i] += 1
           break
 
+      firstPlot = False
+
 
     # close gnuplot script and plot
     f_gnuplot.close()
@@ -361,9 +423,13 @@ class PlotResults(dt.DataSet):
     if self.keepPlotScript == 0:
       os.remove( f_gnuplot_name )
 
+    print("Finished!")
+
   ############################################################################################
-  # Class definition
+  # Class Initialization
   ############################################################################################
+
+  #readConfigFile()
 
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
   plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0)
@@ -384,38 +450,58 @@ class PlotResults(dt.DataSet):
 
   if len(Configs) > 0:
     cfg = Configs[0]
-    if cfg.selectAll == 1:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(4)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    else:
+      cfgChoice0 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(4)
 
   if len(Configs) > 1:
     cfg = Configs[1]
-    if cfg.selectAll == 1:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(4)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
+    else:
+      cfgChoice1 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(4)
 
   if len(Configs) > 2:
     cfg = Configs[2]
-    if cfg.selectAll == 1:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(2)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
+    else:
+      cfgChoice2 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(2)
 
   if len(Configs) > 3:
     cfg = Configs[3]
-    if cfg.selectAll == 1:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=0)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3).set_pos(col=0)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=0)
+    else:
+      cfgChoice3 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(3).set_pos(col=0)
 
   if len(Configs) > 4:
     cfg = Configs[4]
-    if cfg.selectAll == 1:
-      cfgChoice4 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=1)
+    if cfg.showLabels == 1:
+      displayList = cfg.name
     else:
-      cfgChoice4 = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3).set_pos(col=1)
+      displayList = cfg.configs
+    if cfg.selectAll == 1:
+      cfgChoice4 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=1)
+    else:
+      cfgChoice4 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(3).set_pos(col=1)
 
   _bgFig = dt.BeginGroup("Plotting definition").set_pos(col=0)
   selectPlotCfg = di.MultipleChoiceItem( "Plot Categories (Define which categories define the plotting lines)", aAvailableCfg, default=[2] ).set_pos(col=0)
@@ -426,12 +512,13 @@ class PlotResults(dt.DataSet):
   _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
   showTitle = di.BoolItem("Display plot title", default=True )
-  showBars = di.BoolItem("Generate bar plot", default=False )
+  showBars = di.BoolItem("Generate bar plot", default=GenerateBarPlotDefault )
+
   _egFig = dt.EndGroup("Figure definition")
 
   _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
-  selectXValues = di.ChoiceItem("X values", XValues).set_pos(col=0)
-  selectYValues = di.ChoiceItem("Y values", YValues).set_pos(col=1)
+  selectXValues = di.ChoiceItem("X values", XValues, default=XValueDefault).set_pos(col=0)
+  selectYValues = di.ChoiceItem("Y values", YValues, default=YValueDefault).set_pos(col=1)
   plotXLim = di.StringItem("X axis Limits", default=AxisLimitDefaultX ).set_pos(col=0)
   plotYLim = di.StringItem("Y axis Limits", default=AxisLimitDefaultY ).set_pos(col=1)
   _egAx = dt.EndGroup("Axis definition")
@@ -439,22 +526,17 @@ class PlotResults(dt.DataSet):
   # aux_variables
   gnuplotFile = 0
 
+
+
+
 if __name__ == '__main__':
 
   from guidata.qt.QtGui import QApplication
 
-
   # Create QApplication
   _app = guidata.qapplication()
 
-  #init = Init()
-  #while (not os.path.isfile( ConfigurationFile + ".py" )):
-    #if not plts.edit():
-      #exit()
-
-
   plts = PlotResults("Plot Results")
-  #g = dt.DataSetGroup( [plts], title='Running Tests Plots' )
   while (1):
     if plts.edit():
       plts.genPlot()

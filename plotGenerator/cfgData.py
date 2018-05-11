@@ -1,111 +1,139 @@
-
+#!/bin/python
 
 ###################################################################################################################
 # Init
 
-Configs = [ ConfigurationList() for i in range(3)]
+ConfigVersion = 2
+Configs = [ ConfigurationList() for i in range(5)]
 XValues = []
 YValues = []
 
 
 ###################################################################################################################
-# Optional variables
-ResultsFileDefault = "results_example"
-PlotFileDefault = "PlotFile"
-PlotLegendDefault = 4
-FilterNonExistent = 0
-
-###################################################################################################################
 # Base
-Configs[0].title    = 'Base'
-Configs[0].tab      = 2
-Configs[0].configs  = [ 'lowdelay_P_4R', 'randomaccess',  'randomaccess_SingleSlice', 'lowdelay_P_4R_SingleSlice']
-Configs[0].name     = [ 'Lowdelay P',    'Random Access', 'Random Access Single',     'Lowdelay P Single', ]
-
-
-###################################################################################################################
-# Sequence
-
-Configs[1].title    = 'Sequence'
-Configs[1].tab      = 3
-Configs[1].configs  = [ 'seq_kendo_c3',
-                    'seq_book_arrival_c6',
-                    'seq_basketball_drill',
-                    'seq_race',
-                    'seq_bqsquare',
-                    'seq_park',
-                    'seq_tennis',
-                    'seq_kimono',
-                    'seq_people',
-                    'seq_traffic'
-                  ]
-Configs[1].name     = [ 'Kendo',
-                    'Book Arrival',
-                    'Basketball Drill',
-                    'Race Horses',
-                    'BQSquare',
-                    'Park Scene',
-                    'Tennis',
-                    'Kimono',
-                    'People',
-                    'Traffic'
-                  ]
-
-###################################################################################################################
-# Condition
-
-ConfigsCond = ConfigurationList()
-ConfigsConceal = ConfigurationList()
-
-ConfigsCond.configs = [ 'NoTMVP',
-                        'NoTMVP_IIR_Multi_Ref_Avg',
-                        'NoTMVP_IIR_Multi_Ref_Avg_Weight',
-                        'NoTMVP_ConcRedundantGOPLD10',
-                        'NoTMVP_ConcRedundantGOPLD20',
-                        'NoTMVP_ConcealEncodingGOPLD10',
-                        'NoTMVP_ConcealEncodingGOPLD20',
+Configs[0].title      = 'Base'
+Configs[0].tab        = 2
+Configs[0].selectAll  = 1
+Configs[0].showLabels = 1
+Configs[0].details    = [
+                        ( 'lowdelay_P_4R_slice_1200B', 'Low-Delay' ),
+                        ( 'lowdelay_P_4R_slice_single', 'Low-Delay' ),
                       ]
-ConfigsCond.name    = [ 'Ref',
-                        'MultiAvgW50',
-                        'MultiAvgW75',
-                        'ConcResidue10',
-                        'ConcResidue20',
-                        'ConcStream10',
-                        'ConcStream20',
+
+####################################################################################################################
+## Sequence
+
+Configs[1].title      = 'Sequence'
+Configs[1].tab        = 3
+Configs[1].selectAll  = 1
+Configs[1].showLabels = 1
+Configs[1].details    = [
+                        ( 'seq_kendo_c3', 'Kendo', ),
+                        ( 'seq_book_arrival_c6', 'Book Arrival' ),
+                        ( 'seq_basketball_drill', 'Basketball Drill' ),
+                        ( 'seq_race', 'Race Horses' ),
+                        ( 'seq_bqsquare', 'BQSquare' ),
+                        ( 'seq_park', 'Park Scene' ),
+                        ( 'seq_tennis', 'Tennis' ),
+                        ( 'seq_people', 'People' ),
+                        ( 'seq_kimono', 'Kimono' ),
+                        ( 'seq_traffic', 'Traffic' ),
+                        ( 'seq_kristen_sara', 'Kristen Sara' ),
+                        ( 'seq_four_people', 'Four People' ),
+                        ( 'seq_cactus', 'Cactus' ),
+                      ]
+
+####################################################################################################################
+## Condition
+
+Configs[2].title      = 'Condition'
+Configs[2].tab        = 4
+Configs[2].showLabels = 1
+Configs[2].selectAll  = 1
+Configs[2].details  = [
+                        ( 'NoTMVP_ConcealmentFC','FC' ),
+                        ( 'NoTMVP_ConcealmentMC', 'MC' ),
+                        ( 'NoTMVP_ConcealmentMVE', 'MVE' ),
+                        ( 'NoTMVP_ConcealmentMVESearchDeepFlow', 'DeepFlow' ),
+                        ( 'NoTMVP_ConcealmentMVEBestVersion2_ConcealmentBestSizeDyn13_BestLambda01', 'ECM_13' ),
+                        ( 'NoTMVP_ConcMVE_ConcResGOPLD10_ConcealmentWithDiff','MVE_ConcRes10' ),
                       ]
 
 
-Configs[2].title    = 'Condition'
-Configs[2].tab      = 4
-for i in range( len( ConfigsCond.configs ) ):
-    Configs[2].configs.append( ConfigsCond.configs[i]  )
-    Configs[2].name.append( ConfigsCond.name[i] )
 
+###################################################################################################################
+# QP / Rate
+Configs[3].title      = 'Rate/QP'
+Configs[3].tab        = 5
+Configs[3].values_tab = 6
+Configs[3].selectAll  = 1
+Configs[3].details    = [
+                        ( 'rate_single', 'Rate Single' ),
+                        ( 'qp_22', 'QP=22' ),
+                        ( 'qp_27', 'QP=27' ),
+                        ( 'qp_32', 'QP=32' ),
+                        ( 'qp_37', 'QP=37' ),
+                      ]
+
+###################################################################################################################
+# PLR
+Configs[4].title      = 'PacketLossRatio'
+Configs[4].tab        = 7
+Configs[4].selectAll  = 0
+Configs[4].details    = [
+                        ( '0.0',  'EF'  ),
+                        ( '1.0',  '1%'  ),
+                        ( '3.0',  '3%'  ),
+                        ( '5.0',  '5%'  ),
+                        ( '7.0',  '7%'  ),
+                        ( '10.0', '10%' ),
+                        ( '15.0', '15%' ),
+                        ( '20.0', '20%' ),
+                      ]
 
 ###################################################################################################################
 # Configure results columns
 
-XValues = [(6, "Bitrate [kbps]"), (7, "Packet Loss Ratio [%]") ]
-YValues = [(7, "PSNR [dB]") ]
+XValues = [(6, "Bitrate [kbps]"), (18, "Bitrate+Overhead [kbps]"), (7, "Packet Loss Ratio [%]"), (19, "Effective Packet Loss Ratio [%]"), (3, "Sequence"), (4, "ECM")]
+YValues = [(8, "PSNR [dB]"), (9, "SSIM"), (10, "AFFECTED_PSNR"), (11, "WPSNR"), (20, "FSIM"), (21, "Time [ms]")]
 
-#AxisLimitDefaultX = "0, 5, 100"
-#AxisLimitDefaultY = "30, 1, 42"
+
+###################################################################################################################
+# Defaults
+
+ResultsFileDefault = "summary_decoding"
+FilterNonExistent = 1
+
+PlotFileDefault = "PlotQuality"
+KeepPlotFileDefault = 1
+PlotLegendDefault = 1
+
+ConfigurationSelectAll = 1
+XValueDefault = 3
+YValueDefault = 21
+
+GenerateBarPlotDefault = 1
 
 ###################################################################################################################
 # Gnuplot template
 
 GnuPlotTemplate = """
-set terminal postscript eps enhanced font 'TimesNewRoman,16'
+set terminal postscript eps enhanced font 'TimesNewRoman,18'
+
+set datafile missing '-'
 
 set grid
-set size {0.75,0.75}
-set title   font 'TimesNewRoman,20' offset character    0, -0.7, 0
-set xlabel  font 'TimesNewRoman,18' offset character    0,  0.4, 0
-set xtics   font 'TimesNewRoman,16' offset character    0,    0, 0
-set ylabel  font 'TimesNewRoman,18' offset character  0.9,    0, 0
-set ytics   font 'TimesNewRoman,16'
-set key     font 'TimesNewRoman,16'
-set key spacing 1  top right width 4
+#set size {0.75,0.75}
+
+set title   font 'TimesNewRoman,20' center  offset character 0, -1
+
+set xlabel center
+set ylabel center offset character 1, 0
+
+set xtics center
+set ytics center
+
+set key spacing 1 width 0
 
 set style line 4 lc 1 lt  1 lw 3 pt  2 ps 1
 set style line 2 lc 2 lt  2 lw 3 pt  3 ps 1
@@ -117,4 +145,25 @@ set style line 7 lc 2 lt  7 lw 3 pt  8 ps 1
 set style line 8 lc 3 lt  8 lw 3 pt  9 ps 1
 set style line 9 lc 4 lt  9 lw 3 pt  10 ps 1
 
+set style line 100 lc 1 lw 3 pt 10 ps 1
+set style line 101 lc 2 lw 3 pt 10 ps 1
+set style line 102 lc 3 lw 3 pt 10 ps 1
+
+set rmargin 0.3
+
 """
+
+GnuPlotTemplateBarPlot = """
+
+set style histogram clustered
+set grid y
+set style data histograms
+set style fill solid
+set boxwidth 0.6
+
+set xtics rotate by 30 offset 0,-1
+set bmargin 5
+
+"""
+
+

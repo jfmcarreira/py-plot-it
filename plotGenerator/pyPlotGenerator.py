@@ -428,9 +428,6 @@ class PlotResults(dt.DataSet):
   ############################################################################################
   # Class Initialization
   ############################################################################################
-
-  #readConfigFile()
-
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
   plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0)
   keepPlotScript = di.BoolItem("Keep plot script", default=KeepPlotFileDefault ).set_pos(col=1)

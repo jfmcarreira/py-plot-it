@@ -145,9 +145,10 @@ set style line 7 lc 2 lt  7 lw 3 pt  8 ps 1
 set style line 8 lc 3 lt  8 lw 3 pt  9 ps 1
 set style line 9 lc 4 lt  9 lw 3 pt  10 ps 1
 
-set style line 100 lc 1 lw 3 pt 10 ps 1
-set style line 101 lc 2 lw 3 pt 10 ps 1
-set style line 102 lc 3 lw 3 pt 10 ps 1
+set style line 100 lc 1 lw 3
+set style line 101 lc 4 lw 3
+set style line 102 lc 2 lw 3
+set style line 103 lc 3 lw 3
 
 set rmargin 0.3
 
@@ -155,11 +156,11 @@ set rmargin 0.3
 
 GnuPlotTemplateBarPlot = """
 
-set style histogram clustered
+set style histogram clustered  gap 1.5
 set grid y
 set style data histograms
 set style fill solid
-set boxwidth 0.6
+set boxwidth 1
 
 set xtics rotate by 30 offset 0,-1
 set bmargin 5

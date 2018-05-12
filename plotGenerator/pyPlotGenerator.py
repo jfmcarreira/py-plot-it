@@ -360,7 +360,7 @@ class PlotResults(dt.DataSet):
             plotCommand += " '-' using 1:xtic(2)"
           else:
             plotCommand += " '-' using 1"
-          plotCommand += "ls " + str( plot_idx + 100 )
+          plotCommand += " ls " + str( plot_idx + 100 )
           #plotCommand += " ti col"
         else:
           plotCommand += " '-' using 2:1 w lp ls " + str( plot_idx + 1 )

@@ -28,19 +28,20 @@ Configs[1].tab        = 3
 Configs[1].selectAll  = 1
 Configs[1].showLabels = 1
 Configs[1].details    = [
-                        ( 'seq_kendo_c3', 'Kendo', ),
-                        ( 'seq_book_arrival_c6', 'Book Arrival' ),
                         ( 'seq_basketball_drill', 'Basketball Drill' ),
-                        ( 'seq_race', 'Race Horses' ),
+                        ( 'seq_basketball_drive', 'Basketball Drive' ),
+                        ( 'seq_book_arrival_c6', 'Book Arrival' ),
                         ( 'seq_bqsquare', 'BQSquare' ),
-                        ( 'seq_park', 'Park Scene' ),
-                        ( 'seq_tennis', 'Tennis' ),
-                        ( 'seq_people', 'People' ),
-                        ( 'seq_kimono', 'Kimono' ),
-                        ( 'seq_traffic', 'Traffic' ),
-                        ( 'seq_kristen_sara', 'Kristen Sara' ),
-                        ( 'seq_four_people', 'Four People' ),
                         ( 'seq_cactus', 'Cactus' ),
+                        ( 'seq_four_people', 'Four People' ),
+                        ( 'seq_kimono', 'Kimono' ),
+                        ( 'seq_kendo_c3', 'Kendo', ),
+                        ( 'seq_kristen_sara', 'Kristen Sara' ),
+                        ( 'seq_park', 'Park Scene' ),
+                        ( 'seq_people', 'People' ),
+                        ( 'seq_race', 'Race Horses' ),
+                        ( 'seq_tennis', 'Tennis' ),
+                        ( 'seq_traffic', 'Traffic' ),
                       ]
 
 ####################################################################################################################
@@ -65,10 +66,14 @@ Configs[2].details  = [
 # QP / Rate
 Configs[3].title      = 'Rate/QP'
 Configs[3].tab        = 5
-Configs[3].values_tab = 6
 Configs[3].selectAll  = 1
 Configs[3].details    = [
-                        ( 'rate_single', 'Rate Single' ),
+                        ( 'rate_single',  'Fixed'  ),
+                        ( 'rate_single_90pc',  '-10%'  ),
+                        ( 'rate_single_80pc',  '-20%'  ),
+                        ( 'rate_single_70pc',  '-30%'  ),
+                        ( 'rate_single_60pc',  '-40%'  ),
+                        ( 'rate_single_50pc',  '-50%'  ),
                         ( 'qp_22', 'QP=22' ),
                         ( 'qp_27', 'QP=27' ),
                         ( 'qp_32', 'QP=32' ),
@@ -79,18 +84,24 @@ Configs[3].details    = [
 # PLR
 Configs[4].title      = 'PacketLossRatio'
 Configs[4].tab        = 7
-Configs[4].selectAll  = 0
+Configs[4].selectAll  = 1
 Configs[4].details    = [
                         ( '0.0',  'EF'  ),
-                        ( '1.0',  '1%'  ),
-                        ( '3.0',  '3%'  ),
-                        ( '5.0',  '5%'  ),
-                        ( '7.0',  '7%'  ),
-                        ( '10.0', '10%' ),
-                        ( '15.0', '15%' ),
-                        ( '20.0', '20%' ),
+                        ( '0.5',  '0.5%'  ),
+                        ( '1.0',  '1.0%'  ),
+                        ( '1.2',  '1.2%'  ),
+                        ( '1.6',  '1.6%'  ),
+                        ( '2.0',  '2.0%'  ),
+                        ( '2.2',  '2.2%'  ),
+                        ( '2.4',  '2.4%'  ),
+                        ( '2.6',  '2.6%'  ),
+                        ( '2.8',  '2.8%'  ),
+                        ( '3.0',  '3.0%'  ),
+                        ( '5.0',  '5.0%'  ),
+                        ( '7.0',  '7.0%'  ),
+                        ( '10.0', '10.0%' ),
+                        ( '20.0', '20.0%' ),
                       ]
-
 ###################################################################################################################
 # Configure results columns
 

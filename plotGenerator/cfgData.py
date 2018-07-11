@@ -128,13 +128,16 @@ GenerateBarPlotDefault = 1
 ###################################################################################################################
 # Gnuplot template
 
+# EPS | PDF
+GnuplotTerminalDefault = 0
+
 GnuPlotTemplate = """
-set terminal postscript eps enhanced font 'TimesNewRoman,18'
+font 'TimesNewRoman,18'
 
 set datafile missing '-'
 
 set grid
-#set size {0.75,0.75}
+#set size {1,1}
 
 set title   font 'TimesNewRoman,20' center  offset character 0, -1
 

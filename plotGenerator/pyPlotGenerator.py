@@ -39,7 +39,7 @@ class ConfigurationList:
 
 
 ConfigFileName = "cfgData.py"
-
+GnuplotTerminals = ["eps", "pdf"]
 
 
 ############################################################################################
@@ -77,6 +77,8 @@ if not 'YValueDefault' in globals():
 if not 'GenerateBarPlotDefault' in globals():
   GenerateBarPlotDefault = 0
 
+if not 'GnuplotTerminalDefault' in globals():
+  GnuplotTerminalDefault = "eps"
 
 ## Configure how to read the results file
 def filterResults( results, col, value):
@@ -146,6 +148,9 @@ class PlotResults(dt.DataSet):
 
 
   def genPlot(self):
+
+    # Selected terminal
+    selectedGnuplotTerminal = GnuplotTerminals[self.terminalIdx];
 
     if self.plotFile == "":
       print( "Empty title!!" )
@@ -242,6 +247,16 @@ class PlotResults(dt.DataSet):
     plotFileNameList = []
     f_gnuplot_name = self.plotFile + ".plt"
     f_gnuplot = self.gnuplotFile = open( f_gnuplot_name, 'w' )
+
+    if selectedGnuplotTerminal == "eps":
+      GnuPlotTerminalConfig = "set terminal postscript eps enhanced"
+
+    if selectedGnuplotTerminal == "pdf":
+      GnuPlotTerminalConfig = "set terminal pdfcairo mono"
+
+    GnuPlotTerminalConfig += " \\"
+    f_gnuplot.write( GnuPlotTerminalConfig )
+
     f_gnuplot.write( GnuPlotTemplate )
 
     if self.showBars == True:
@@ -261,7 +276,8 @@ class PlotResults(dt.DataSet):
       gnuplotKeyConfiguration += "set key " + keyPosition
       if "left" in keyPosition:
         gnuplotKeyConfiguration += " Left reverse" # swap label and markers
-
+      else:
+        gnuplotKeyConfiguration += " Right" # swap label and markers
     else:
       gnuplotKeyConfiguration += "set key off"
 
@@ -383,9 +399,16 @@ class PlotResults(dt.DataSet):
       # dump title, output, plot command and data points
       if not plotCommand == "plot":
         plotFileNameList.append( plotCurrentFileName ) # keep a list of files to convert
+        if selectedGnuplotTerminal == "eps":
+          plotCurrentFileName += ".eps"
+        if selectedGnuplotTerminal == "pdf":
+          plotCurrentFileName += ".pdf"
+
+        f_gnuplot.write( "set output '"  + plotCurrentFileName + "'\n" )
+
         if self.showTitle:
           f_gnuplot.write( "set title '" + plotCurrentTitle + "'\n" )
-        f_gnuplot.write( "set output '"  + plotCurrentFileName + ".eps'\n" )
+
         f_gnuplot.write( plotCommand[:-1] + "\n" )
         for line in plotData:
           for item in line:
@@ -411,14 +434,17 @@ class PlotResults(dt.DataSet):
     os.system( "gnuplot -e \"load '" + f_gnuplot_name + "'\" ")
 
     # Finally convert the set of pdf files in one pdf file with multiple pages
-    convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" + plotFileName + ".pdf"
-    for f in plotFileNameList:
-      os.system( "ps2pdf -dEPSCrop " + f + ".eps " + f + ".pdf" )
-      convert_cmd += " " + f + ".pdf"
-    os.system( convert_cmd )
-    for f in plotFileNameList:
-      os.remove( f + ".eps" )
-      os.remove( f + ".pdf" )
+    if selectedGnuplotTerminal == "eps" or selectedGnuplotTerminal == "pdf":
+      convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" + plotFileName + ".pdf"
+      for f in plotFileNameList:
+        if selectedGnuplotTerminal == "eps":
+          os.system( "ps2pdf -dEPSCrop " + f + ".eps " + f + ".pdf" )
+        convert_cmd += " " + f + ".pdf"
+      os.system( convert_cmd )
+      for f in plotFileNameList:
+        if selectedGnuplotTerminal == "eps":
+          os.remove( f + ".eps" )
+        os.remove( f + ".pdf" )
 
     if self.keepPlotScript == 0:
       os.remove( f_gnuplot_name )
@@ -507,9 +533,10 @@ class PlotResults(dt.DataSet):
 
   legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
+  terminalIdx = di.ChoiceItem( "Gnuplot terminal", GnuplotTerminals, default=GnuplotTerminalDefault )
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
-  showTitle = di.BoolItem("Display plot title", default=True )
-  showBars = di.BoolItem("Generate bar plot", default=GenerateBarPlotDefault )
+  showTitle = di.BoolItem("Display plot title", default=True ).set_pos(col=0)
+  showBars = di.BoolItem("Generate bar plot", default=GenerateBarPlotDefault ).set_pos(col=1)
 
   _egFig = dt.EndGroup("Figure definition")
 

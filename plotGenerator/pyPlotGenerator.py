@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 ############################################################################################
 # Imports
@@ -9,6 +9,7 @@ import tempfile
 import os.path
 import signal
 import imp
+from operator import itemgetter
 from guidata.qt.QtGui import QMainWindow, QSplitter
 from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
 from guidata.dataset.datatypes import (DataSet, BeginGroup, EndGroup,
@@ -39,13 +40,13 @@ class ConfigurationList:
     self.values_tab = -1
     self.use_for_plot = 0
     self.selectAll = 0
+    self.sort = 0
     self.showLabels = 1
 
 
 ############################################################################################
 # Auxiliary functions
 ############################################################################################
-
 def filterResults( results, col, value):
   filtResults = []
   for line in results:
@@ -104,9 +105,7 @@ def readResults(fname):
 # Read configuration
 ############################################################################################
 ConfigFileName = "cfgData.py"
-with open(ConfigFileName) as f:
-  code = compile(f.read(), ConfigFileName, 'exec')
-  exec(code)
+exec(open(ConfigFileName).read())
 
 ############################################################################################
 # Default values
@@ -121,9 +120,54 @@ if not 'ConfigMapping' in globals():
   ConfigMapping = []
 
 if not 'GnuPlotTemplateDefault' in globals():
-  GnuPlotTemplateDefault = ""
+  GnuPlotTemplateDefault = """
+  font 'TimesNewRoman,14'
+
+  set datafile missing '-'
+
+  set grid
+  #set size square {1,.5}
+
+  set title center  offset character 0, -.9
+
+  set xlabel center
+  set ylabel center offset character 1, 0
+
+
+  set key spacing 1 width 0
+
+  set style line 4 lc 1 lt  1 lw 2 pt  2 ps 1
+  set style line 2 lc 2 lt  2 lw 2 pt  3 ps 1
+  set style line 3 lc 3 lt  4 lw 2 pt  4 ps 1
+  set style line 1 lc 4 lt  4 lw 2 pt  10 ps 1
+  set style line 5 lc 7 lt  3 lw 2 pt  6 ps 1
+  set style line 6 lc 8 lt  6 lw 2 pt  8 ps 1
+  set style line 7 lc 2 lt  7 lw 2 pt  8 ps 1
+  set style line 8 lc 3 lt  8 lw 2 pt  9 ps 1
+  set style line 9 lc 4 lt  9 lw 2 pt  10 ps 1
+
+  set style line 100 lc 1 lw 3
+  set style line 101 lc 4 lw 3
+  set style line 102 lc 2 lw 3
+  set style line 103 lc 3 lw 3
+
+  #set rmargin 1
+
+  """
+
 if not 'GnuPlotTemplateBarPlotDefault' in globals():
-  GnuPlotTemplateBarPlotDefault = ""
+  GnuPlotTemplateBarPlotDefault = """
+
+  set style histogram clustered  gap 1.5
+  set grid y
+  set style data histograms
+  set style fill solid
+  set boxwidth 1
+
+  set xtics rotate by 30 offset 0,-1
+  set bmargin 5
+
+  """
 
 if not 'FilterNonExistent' in globals():
   FilterNonExistent = 0
@@ -150,6 +194,8 @@ if not 'GenerateBarPlotDefault' in globals():
 
 if not 'GnuplotTerminalDefault' in globals():
   GnuplotTerminalDefault = "eps"
+
+g_AxisValues = [XValues, YValues]
 
 ############################################################################################
 # Read data file
@@ -190,6 +236,10 @@ elif ConfigVersion == 3:
     currConfig = ConfigsImport[i]
     currConfig.details = resultsGetDetails( ResultsTable, currConfig.tab)
     currConfig.details = translateMappings( ConfigMapping, currConfig.details )
+
+    if currConfig.sort == 1:
+      currConfig.details.sort(key=itemgetter(0))
+
     for j in range( len( currConfig.details ) ):
       currConfig.configs.append( currConfig.details[j][0] )
       currConfig.name.append( currConfig.details[j][1] )
@@ -206,64 +256,77 @@ class PlotGenerator:
   def __init__(self, PltConfig, GnuplotConfig):
     self.PltConfig = PltConfig
     self.GnuplotConfig = GnuplotConfig
-    # aux_variables
-    self.gnuplotFile = 0
-
-  def dumpAxisLimits(self, axis, axisLimit):
-    if axisLimit:
-      axisLimit = axisLimit.split(',')
-      if len( axisLimit ) == 3:
-        self.gnuplotFile.write( "set " + axis + "tics " + axisLimit[0] + "," + axisLimit[1] + "," + axisLimit[2] + "\n" )
-        self.gnuplotFile.write( "set " + axis + "range [" + axisLimit[0] + ":" + axisLimit[2] + "]\n" )
-      else:
-        self.gnuplotFile.write( "set " + axis + "range [" + axisLimit[0] + ":" + axisLimit[1] + "]\n" )
 
 
-  def genPlot(self, ):
+  ###
+  ### General functions
+  ###
+  def getData(self, currentFileConfigChoice, currentPlotConfigChoice):
 
-    # Selected terminal
-    selectedGnuplotTerminal = GnuplotTerminals[self.GnuplotConfig.terminalIdx];
-    UseBarPlot = self.GnuplotConfig.showBars
+    plotResults = []
+    barDataIndex = 0
 
+    ## Filter the result set for the different line curves of the current plot
+    filteredResults = self.OutputResults
+    for i in range( len( self.fileConfig )):
+      curr_idx = self.fileConfigChoice[i][currentFileConfigChoice[i]]
+      filteredResults = filterResults( filteredResults, self.fileConfig[i].tab, self.fileConfig[i].configs[curr_idx] )
+
+    applyFiltering = False
+    for i in range( len( self.plotConfig )):
+      curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
+      if self.PltConfig.selectXValues == self.plotConfig[i].tab or self.PltConfig.selectXValues == self.plotConfig[i].values_tab:
+        applyFiltering = True
+        continue
+      filteredResults = filterResults( filteredResults, self.plotConfig[i].tab, self.plotConfig[i].configs[curr_idx] )
+
+    if applyFiltering:
+      for i in range( len( self.plotConfig )):
+        if self.PltConfig.selectXValues != self.plotConfig[i].tab and self.PltConfig.selectXValues != self.plotConfig[i].values_tab:
+          continue
+        for j in self.plotConfigChoice[i]:
+          for line in filteredResults:
+            if line[ self.plotConfig[i].tab - 1 ] == self.plotConfig[i].configs[j]:
+              currPlotData = [ line[self.PltConfig.selectYValues - 1] ]
+              currPlotData.append( line[self.PltConfig.selectXValues - 1] )
+              currPlotData.append( "\"" + self.barPlotLabelsCfg[barDataIndex] + "\"" )
+              barDataIndex += 1
+              plotResults.append( currPlotData )
+    else:
+      for line in filteredResults:
+        currPlotData = [ line[self.PltConfig.selectYValues - 1] ]
+        currPlotData.append( line[self.PltConfig.selectXValues - 1] )
+        currPlotData.append( "\"" + self.barPlotLabelsCfg[barDataIndex] + "\"" )
+        barDataIndex += 1
+        plotResults.append( currPlotData )
+
+    return plotResults
+
+
+  def generateOutput(self):
 
     if self.PltConfig.plotFile == "":
-      print( "Empty title!!" )
+      print( "Empty output!!" )
       return
 
-    XLabel = []
-    YLabel = []
-    for i in range( len( XValues )):
-      if XValues[i][0] == self.PltConfig.selectXValues:
-        XLabel = XValues[i][1]
-        break
-
-    for i in range( len( YValues )):
-      if YValues[i][0] == self.PltConfig.selectYValues:
-        YLabel = YValues[i][1]
-        break
-
-    #
-    # Init variables
-    #
-
     # General cfg variable
-    aCfgChoice       = []
+    self.aCfgChoice       = []
     # Configs for each group of plots
-    fileConfig       = []
-    fileConfigChoice = []
+    self.fileConfig       = []
+    self.fileConfigChoice = []
     # Configs for each plot
-    plotConfig       = []
-    plotConfigChoice = []
+    self.plotConfig       = []
+    self.plotConfigChoice = []
 
     # Bar plot specific
-    barPlotLabelsCfg = []
+    self.barPlotLabelsCfg = []
 
-    numberPlots = 1
+    self.numberPlots = 1
     plotConditions = 0
-    numberLines = 1
+    self.numberLines = 1
 
     for i in range( len( Configs )):
-      exec("aCfgChoice.append( self.PltConfig.cfgChoice%d )" % (i) )
+      exec("self.aCfgChoice.append( self.PltConfig.cfgChoice%d )" % (i) )
       use_for_plot = 0
       skip_filtering = 0
       for j in self.PltConfig.selectPlotCfg:
@@ -275,78 +338,110 @@ class PlotGenerator:
         if Configs[i].title == self.PltConfig.aAvailableCfg[j]:
           if Configs[i].tab == self.PltConfig.selectXValues:
             for label in Configs[i].name:
-              barPlotLabelsCfg.append( label )
+              self.barPlotLabelsCfg.append( label )
           skip_filtering = 1
           break
 
       if not skip_filtering:
         if use_for_plot == 0:
-          fileConfig.append( Configs[i] )
-          fileConfigChoice.append( aCfgChoice[i] )
-          numberPlots *= len( aCfgChoice[i] )
+          self.fileConfig.append( Configs[i] )
+          self.fileConfigChoice.append( self.aCfgChoice[i] )
+          self.numberPlots *= len( self.aCfgChoice[i] )
         else:
           plotConditions += 1
-          plotConfig.append( Configs[i] )
-          plotConfigChoice.append( aCfgChoice[i] )
+          self.plotConfig.append( Configs[i] )
+          self.plotConfigChoice.append( self.aCfgChoice[i] )
           if self.PltConfig.selectXValues != Configs[i].tab and self.PltConfig.selectXValues != Configs[i].values_tab:
-            numberLines *= len( aCfgChoice[i] )
+            self.numberLines *= len( self.aCfgChoice[i] )
 
-    if numberPlots == 0 or plotConditions == 0:
+    if self.numberPlots == 0 or plotConditions == 0:
       return
 
-    print( "Generation %d plots with %d lines!" % (numberPlots, numberLines) )
+    print( "Generation %d plots with %d lines!" % (self.numberPlots, self.numberLines) )
     print( "Using columns %d vs %d" % (self.PltConfig.selectXValues - 1, self.PltConfig.selectYValues - 1) )
 
-    if UseBarPlot:
-      print(barPlotLabelsCfg)
 
     if not ResultsTable:
       readResults( self.PltConfig.resultsFile )
 
-
     configChoiceCurrent = [ int(0) for i in range( len( Configs ) )]
-    preFilteredResults = ResultsTable
+    self.OutputResults = ResultsTable
     for i in range( len( Configs )):
       configList = []
-      for j in aCfgChoice[i]:
+      for j in self.aCfgChoice[i]:
         configList.append( Configs[i].configs[j] )
-      preFilteredResults = filterSeveralResults( preFilteredResults, Configs[i].tab, configList )
+      self.OutputResults = filterSeveralResults( self.OutputResults, Configs[i].tab, configList )
 
-    catIdx = 0
-    plotFileNameList = []
-    plotFileName = self.PltConfig.plotFile
+    self.OutputScript = open( self.PltConfig.plotFile + ".bash", 'w' )
+    # Write bash header
+    self.OutputScript.write( "#!/bin/bash\n" )
 
 
-    ## Init gnuplot script
-    plotFileNameList = []
-    f_gnuplot_name = self.PltConfig.plotFile + ".plt"
-    f_gnuplot = self.gnuplotFile = open( f_gnuplot_name, 'w' )
+    self.dumpPlotHeader()
+    self.loopPlot()
+    self.dumpPlotFooter()
+    print("Finished!")
 
-    if selectedGnuplotTerminal == "eps":
+
+  ###
+  ### Plot functions
+  ###
+  def dumpAxisLabels(self, axisName):
+    if axisName == "x":
+      axis_values = g_AxisValues[0]
+    elif axisName == "y":
+      axis_values = g_AxisValues[1]
+    else:
+      return
+
+    Label = []
+    for i in range( len( axis_values )):
+      if axis_values[i][0] == self.PltConfig.selectXValues:
+        Label = axis_values[i][1]
+        break
+
+    if Label and not self.GnuplotConfig.showBars:
+      self.OutputScript.write( "set " + axisName + "label '" + Label + "'\n" )
+
+  def dumpAxisLimits(self, axis, axisLimit):
+    if axisLimit:
+      axisLimit = axisLimit.split(',')
+      if len( axisLimit ) == 3:
+        self.OutputScript.write( "set " + axis + "tics " + axisLimit[0] + "," + axisLimit[1] + "," + axisLimit[2] + "\n" )
+        self.OutputScript.write( "set " + axis + "range [" + axisLimit[0] + ":" + axisLimit[2] + "]\n" )
+      else:
+        self.OutputScript.write( "set " + axis + "range [" + axisLimit[0] + ":" + axisLimit[1] + "]\n" )
+
+  def dumpPlotHeader(self):
+    # Selected terminal
+    self.selectedGnuplotTerminal = GnuplotTerminals[self.GnuplotConfig.terminalIdx];
+
+    if self.GnuplotConfig.showBars:
+      print(self.barPlotLabelsCfg)
+
+    # Start gnuplot configuration
+    self.OutputScript.write( "gnuplot << _EOF\n" )
+
+    if self.selectedGnuplotTerminal == "eps":
       GnuPlotTerminalConfig = "set terminal postscript eps enhanced"
-
-    if selectedGnuplotTerminal == "pdf":
+    elif self.selectedGnuplotTerminal == "pdf":
       GnuPlotTerminalConfig = "set terminal pdfcairo mono"
+    else:
+      return
 
     GnuPlotTerminalConfig += " \\"
-    f_gnuplot.write( GnuPlotTerminalConfig )
+    self.OutputScript.write( GnuPlotTerminalConfig )
+    self.OutputScript.write( self.GnuplotConfig.GnuPlotTemplate )
+    if self.GnuplotConfig.showBars == True:
+      self.OutputScript.write( self.GnuplotConfig.GnuPlotTemplateBarPlot )
 
-    f_gnuplot.write( self.GnuplotConfig.GnuPlotTemplate )
-
-    if UseBarPlot == True:
-      f_gnuplot.write( self.GnuplotConfig.GnuPlotTemplateBarPlot )
-
-
-    if XLabel and not UseBarPlot:
-      f_gnuplot.write( "set xlabel '" + XLabel + "'\n" )
-    if YLabel:
-      f_gnuplot.write( "set ylabel '" + YLabel + "'\n" )
+    self.dumpAxisLabels("x")
+    self.dumpAxisLabels("y")
 
     # Legend configuration
     gnuplotKeyConfiguration = ""
     if not self.GnuplotConfig.legendPosition == 0:
       keyPosition = self.GnuplotConfig.legendPosition[self.GnuplotConfig.legendPositionIdx].lower();
-
       gnuplotKeyConfiguration += "set key " + keyPosition
       if "left" in keyPosition:
         gnuplotKeyConfiguration += " Left reverse" # swap label and markers
@@ -354,85 +449,84 @@ class PlotGenerator:
         gnuplotKeyConfiguration += " Right" # swap label and markers
     else:
       gnuplotKeyConfiguration += "set key off"
-
-    f_gnuplot.write( gnuplotKeyConfiguration + "\n\n" )
-
+    self.OutputScript.write( gnuplotKeyConfiguration + "\n" )
 
     self.dumpAxisLimits( "x", self.GnuplotConfig.plotXLim )
     self.dumpAxisLimits( "y", self.GnuplotConfig.plotYLim )
 
-    fileConfigChoiceCurrent = [ int(0) for i in range( len( fileConfig ) )]
+    self.plotFileNameList = []
 
-    for file_idx in range( numberPlots ):
+  def dumpPlotFooter(self):
+    # Finally convert the set of pdf files in one pdf file with multiple pages
+    if self.selectedGnuplotTerminal == "eps" or self.selectedGnuplotTerminal == "pdf":
+      self.OutputScript.write( "CONV_FILENAMES=\"" )
+      for f in self.plotFileNameList:
+        self.OutputScript.write( f + ".pdf " )
+      self.OutputScript.write( "\"\n" )
+      convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" +  self.PltConfig.plotFile + ".pdf"
 
-      ## Filter the result set for the different line curves of the current plot
-      filteredResults = preFilteredResults;
+      if self.selectedGnuplotTerminal == "eps":
+        self.OutputScript.write( "for f in $CONV_FILENAMES; do\n" )
+        self.OutputScript.write( "ps2pdf -dEPSCrop ${f%.*}.eps ${f}\n" )
+        self.OutputScript.write( "rm ${f%.*}.eps\n" )
+        self.OutputScript.write( "done \n" )
+
+      self.OutputScript.write( convert_cmd + " $CONV_FILENAMES \n")
+      self.OutputScript.write( "rm ${CONV_FILENAMES} \n" )
+
+    # close gnuplot bash script and plot
+    self.OutputScript.close()
+    os.system( "bash " + self.PltConfig.plotFile + ".bash" )
+
+    if self.PltConfig.keepPlotScript == 0:
+      os.remove( self.OutputScript_name )
+
+
+
+  def loopPlot(self):
+
+    # Marks which file choice are we plotting
+    currentFileConfigChoice = [ int(0) for i in range( len( self.fileConfig ) )]
+
+    # Loops through all files
+    for file_idx in range( self.numberPlots ):
+
+      ## Configure title and file name
       plotCurrentFileName = ""
       plotCurrentTitle = ""
-      for i in range( len( fileConfig )):
-          filteredResults = filterResults( filteredResults, fileConfig[i].tab, fileConfig[i].configs[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] )
-          plotCurrentFileName += fileConfig[i].configs[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] + "_"
-          if fileConfig[i].name[fileConfigChoice[i][fileConfigChoiceCurrent[i]]]:
-            plotCurrentTitle += fileConfig[i].name[fileConfigChoice[i][fileConfigChoiceCurrent[i]]] + " - "
+      for i in range( len( self.fileConfig )):
+        curr_idx = self.fileConfigChoice[i][currentFileConfigChoice[i]]
+        plotCurrentFileName += self.fileConfig[i].configs[curr_idx] + "_"
+        if self.fileConfig[i].name[curr_idx]:
+          plotCurrentTitle += self.fileConfig[i].name[curr_idx] + " - "
 
       plotCurrentFileName = plotCurrentFileName[:-1]
       plotCurrentTitle = plotCurrentTitle[:-3]
-      plotConfigChoiceCurrent = [ int(0) for i in range( len( plotConfig ) )]
+
+      # Marks which line choice are we plotting
+      currentPlotConfigChoice = [ int(0) for i in range( len( self.plotConfig ) )]
 
       # Init gnuplot data point and command
       plotData = []
       plotCommand = "plot"
 
-      firstPlot = True
-
       ## Loop through each plot on the current file (several lines)
-      for plot_idx in range( numberLines ):
+      for plot_idx in range( self.numberLines ):
 
-        ## Filter results for the current line
+        ## configure legend
         legend = ""
-        currResults = filteredResults
         applyFiltering = False
-        for i in range( len( plotConfig )):
-          if self.PltConfig.selectXValues == plotConfig[i].tab or self.PltConfig.selectXValues == plotConfig[i].values_tab:
-            applyFiltering = True
+        for i in range( len( self.plotConfig )):
+          curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
+          if self.PltConfig.selectXValues == self.plotConfig[i].tab or self.PltConfig.selectXValues == self.plotConfig[i].values_tab:
             continue
-          currResults = filterResults( currResults, plotConfig[i].tab, plotConfig[i].configs[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] )
-          legend += plotConfig[i].name[plotConfigChoice[i][plotConfigChoiceCurrent[i]]] + " - "
-
-        #print("Applying filtering: " + str(applyFiltering) )
-
-        plotResults = []
-        barDataIndex = 0
-
-        if applyFiltering:
-          for i in range( len( plotConfig )):
-            if self.PltConfig.selectXValues != plotConfig[i].tab and self.PltConfig.selectXValues != plotConfig[i].values_tab:
-              continue
-            for j in plotConfigChoice[i]:
-              for line in currResults:
-                if line[ plotConfig[i].tab - 1 ] == plotConfig[i].configs[j]:
-                  currPlotData = [ line[self.PltConfig.selectYValues - 1] ]
-                  if UseBarPlot:
-                    if firstPlot == True:
-                      currPlotData.append( "\"" + barPlotLabelsCfg[barDataIndex] + "\"" )
-                  else:
-                    currPlotData.append( line[self.PltConfig.selectXValues - 1] )
-                  barDataIndex += 1
-                  plotResults.append( currPlotData )
-        else:
-          for line in currResults:
-            currPlotData = [ line[self.PltConfig.selectYValues - 1] ]
-            if UseBarPlot:
-              if firstPlot == True:
-                currPlotData.append( "\"" + barPlotLabelsCfg[barDataIndex] + "\"" )
-            else:
-              currPlotData.append( line[self.PltConfig.selectXValues - 1] )
-            barDataIndex += 1
-            plotResults.append( currPlotData )
+          legend += self.plotConfig[i].name[curr_idx] + " - "
 
         if legend != "":
           legend = legend[:-3]
           legend = legend.replace('_', '\_')
+
+        plotResults = self.getData( currentFileConfigChoice, currentPlotConfigChoice )
 
         ## check empty data -> trigger an exception
         if not plotResults:
@@ -440,90 +534,63 @@ class PlotGenerator:
           continue
 
         plotResultsSort = plotResults
-        #currResultsSort.sort( key=lambda x: x[0])
+        if not self.GnuplotConfig.showBars:
+          plotResultsSort = sorted(plotResultsSort, key=lambda line: float(line[1]))
         for line in plotResultsSort:
           plotData.append( line )
         plotData.append( ["e"] )
 
-        if UseBarPlot:
-          if firstPlot == True:
-            plotCommand += " '-' using 1:xtic(2)"
-          else:
-            plotCommand += " '-' using 1"
-          plotCommand += " ls " + str( plot_idx + 100 )
+        if self.GnuplotConfig.showBars:
+          plotCommand += " '-' using 1:xtic(3) ls " + str( plot_idx + 100 )
           #plotCommand += " ti col"
         else:
           plotCommand += " '-' using 2:1 w lp ls " + str( plot_idx + 1 )
-
         plotCommand += " title '" + legend + "',"
-
 
         ## setup variables for the next line within the same plot
         ## try to increment the last config! if not possible
         ## try to increment the previous one and so one
-        for i in reversed(range( len( plotConfig ))):
-          if self.PltConfig.selectXValues == plotConfig[i].tab or self.PltConfig.selectXValues == plotConfig[i].values_tab:
+        for i in reversed(range( len( self.plotConfig ))):
+          if self.PltConfig.selectXValues == self.plotConfig[i].tab or self.PltConfig.selectXValues == self.plotConfig[i].values_tab:
             continue
-          if plotConfigChoiceCurrent[i] ==  len( plotConfigChoice[i] ) - 1:
-            plotConfigChoiceCurrent[i] = 0
+          if currentPlotConfigChoice[i] ==  len( self.plotConfigChoice[i] ) - 1:
+            currentPlotConfigChoice[i] = 0
           else:
-            plotConfigChoiceCurrent[i] += 1
+            currentPlotConfigChoice[i] += 1
             break
 
       # dump title, output, plot command and data points
       if not plotCommand == "plot":
-        plotFileNameList.append( plotCurrentFileName ) # keep a list of files to convert
-        if selectedGnuplotTerminal == "eps":
+        self.plotFileNameList.append( plotCurrentFileName ) # keep a list of files to convert
+        if self.selectedGnuplotTerminal == "eps":
           plotCurrentFileName += ".eps"
-        if selectedGnuplotTerminal == "pdf":
+        if self.selectedGnuplotTerminal == "pdf":
           plotCurrentFileName += ".pdf"
 
-        f_gnuplot.write( "set output '"  + plotCurrentFileName + "'\n" )
+        self.OutputScript.write( "set output '"  + plotCurrentFileName + "'\n" )
 
         if self.GnuplotConfig.showTitle:
-          f_gnuplot.write( "set title '" + plotCurrentTitle + "'\n" )
+          self.OutputScript.write( "set title '" + plotCurrentTitle + "'\n" )
 
-        f_gnuplot.write( plotCommand[:-1] + "\n" )
+        self.OutputScript.write( plotCommand[:-1] + "\n" )
         for line in plotData:
           for item in line:
-            f_gnuplot.write( "%s " % (item) )
-          f_gnuplot.write( "\n")
-        f_gnuplot.write( "\n")
+            self.OutputScript.write( "%s " % (item) )
+          self.OutputScript.write( "\n")
+        self.OutputScript.write( "\n")
 
       ## setup variables for the next file
       ## try to increment the last config! if not possible
       ## try to increment the previous one and so one
-      for i in reversed(range( len( fileConfig ))):
-        if fileConfigChoiceCurrent[i] ==  len( fileConfigChoice[i] ) - 1:
-          fileConfigChoiceCurrent[i] = 0
+      for i in reversed(range( len( self.fileConfig ))):
+        if currentFileConfigChoice[i] ==  len( self.fileConfigChoice[i] ) - 1:
+          currentFileConfigChoice[i] = 0
         else:
-          fileConfigChoiceCurrent[i] += 1
+          currentFileConfigChoice[i] += 1
           break
 
-      firstPlot = False
+    self.OutputScript.write( "_EOF\n" )
 
-
-    # close gnuplot script and plot
-    f_gnuplot.close()
-    os.system( "gnuplot -e \"load '" + f_gnuplot_name + "'\" ")
-
-    # Finally convert the set of pdf files in one pdf file with multiple pages
-    if selectedGnuplotTerminal == "eps" or selectedGnuplotTerminal == "pdf":
-      convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" + plotFileName + ".pdf"
-      for f in plotFileNameList:
-        if selectedGnuplotTerminal == "eps":
-          os.system( "ps2pdf -dEPSCrop " + f + ".eps " + f + ".pdf" )
-        convert_cmd += " " + f + ".pdf"
-      os.system( convert_cmd )
-      for f in plotFileNameList:
-        if selectedGnuplotTerminal == "eps":
-          os.remove( f + ".eps" )
-        os.remove( f + ".pdf" )
-
-    if self.PltConfig.keepPlotScript == 0:
-      os.remove( f_gnuplot_name )
-
-    print("Finished!")
 
 
 class PlotConfiguration(dt.DataSet):
@@ -531,76 +598,25 @@ class PlotConfiguration(dt.DataSet):
   # Class Initialization
   ############################################################################################
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
-  plotFile = di.StringItem("Plot file", default = PlotFileDefault ).set_pos(col=0)
-  keepPlotScript = di.BoolItem("Keep plot script", default=KeepPlotFileDefault ).set_pos(col=1)
+  plotFile = di.StringItem("Output", default = PlotFileDefault ).set_pos(col=0)
+  keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
 
   aAvailableCfg = []
   for cfg in Configs:
     aAvailableCfg.append( cfg.title )
 
-  #cfgChoice = []
-  #for cfg in Configs:
-    #if cfg.selectAll == 1:
-      #currentCfgChoice = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3)
-    #else:
-      #currentCfgChoice = di.MultipleChoiceItem( cfg.title, cfg.configs, default=[] ).vertical(3)
-    #cfgChoice.append( currentCfgChoice )
-
-
-  if len(Configs) > 0:
-    cfg = Configs[0]
+  cfgChoiceList = []
+  for i in range(len(Configs)):
+    cfg = Configs[i]
+    defaults = []
     if cfg.showLabels == 1:
       displayList = cfg.name
     else:
       displayList = cfg.configs
     if cfg.selectAll == 1:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
-    else:
-      cfgChoice0 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(4)
-
-  if len(Configs) > 1:
-    cfg = Configs[1]
-    if cfg.showLabels == 1:
-      displayList = cfg.name
-    else:
-      displayList = cfg.configs
-    if cfg.selectAll == 1:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(4)
-    else:
-      cfgChoice1 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(4)
-
-  if len(Configs) > 2:
-    cfg = Configs[2]
-    if cfg.showLabels == 1:
-      displayList = cfg.name
-    else:
-      displayList = cfg.configs
-    if cfg.selectAll == 1:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(2)
-    else:
-      cfgChoice2 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(2)
-
-  if len(Configs) > 3:
-    cfg = Configs[3]
-    if cfg.showLabels == 1:
-      displayList = cfg.name
-    else:
-      displayList = cfg.configs
-    if cfg.selectAll == 1:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=0)
-    else:
-      cfgChoice3 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(3).set_pos(col=0)
-
-  if len(Configs) > 4:
-    cfg = Configs[4]
-    if cfg.showLabels == 1:
-      displayList = cfg.name
-    else:
-      displayList = cfg.configs
-    if cfg.selectAll == 1:
-      cfgChoice4 = di.MultipleChoiceItem( cfg.title, displayList, default=[ i for i in range(len(cfg.configs)) ] ).vertical(3).set_pos(col=1)
-    else:
-      cfgChoice4 = di.MultipleChoiceItem( cfg.title, displayList, default=[] ).vertical(3).set_pos(col=1)
+      defaults=[ i for i in range(len(cfg.configs)) ]
+    exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(5)" % (i) )
+    exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
   _bgFig = dt.BeginGroup("Plotting definition").set_pos(col=0)
   selectPlotCfg = di.MultipleChoiceItem( "Plot Categories (Define which categories define the plotting lines)", aAvailableCfg, default=[2] )
@@ -650,7 +666,7 @@ if __name__ == '__main__':
   g = dt.DataSetGroup( [config, templates], title='Python Gnuplot Generator' )
   while (1):
     if g.edit():
-      plts.genPlot()
+      plts.generateOutput()
     else:
       break;
 

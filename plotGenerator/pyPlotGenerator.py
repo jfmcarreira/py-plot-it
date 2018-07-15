@@ -119,6 +119,9 @@ if not 'ConfigVersion' in globals():
 if not 'ConfigMapping' in globals():
   ConfigMapping = []
 
+if not 'LatexTemplateDefault' in globals():
+  LatexTemplateDefault = " "
+
 if not 'GnuPlotTemplateDefault' in globals():
   GnuPlotTemplateDefault = """
   font 'TimesNewRoman,14'
@@ -249,18 +252,14 @@ elif ConfigVersion == 3:
 
 
 ############################################################################################
-# Main class
+# Main classes
 ############################################################################################
-class PlotGenerator:
+class AbstractGenerator:
 
   def __init__(self, PltConfig, GnuplotConfig):
     self.PltConfig = PltConfig
     self.GnuplotConfig = GnuplotConfig
 
-
-  ###
-  ### General functions
-  ###
   def getData(self, currentFileConfigChoice, currentPlotConfigChoice):
 
     plotResults = []
@@ -376,12 +375,44 @@ class PlotGenerator:
     # Write bash header
     self.OutputScript.write( "#!/bin/bash\n" )
 
+    self.header()
+    self.loop()
+    self.footer()
 
-    self.dumpPlotHeader()
-    self.loopPlot()
-    self.dumpPlotFooter()
+    # close gnuplot bash script and plot
+    self.OutputScript.close()
+    os.system( "bash " + self.PltConfig.plotFile + ".bash" )
+
+    if self.PltConfig.keepPlotScript == 0:
+      os.remove( self.OutputScript_name )
+
+
     print("Finished!")
 
+
+class TableGenerator(AbstractGenerator):
+  def __init__(self, PltConfig, GnuplotConfig):
+    AbstractGenerator.__init__(self, PltConfig, GnuplotConfig)
+
+  def header(self):
+    self.OutputScript.write( "pdflatex -halt-on-error << _EOF\n" )
+    self.OutputScript.write( self.GnuplotConfig.LatexTemplate )
+
+
+  def footer(self):
+    self.OutputScript.write( "\n\end{document}_EOF\n" )
+    self.OutputScript.write( "\n_EOF\n" )
+    self.OutputScript.write( "mv texput.pdf " + self.PltConfig.plotFile + ".pdf\n")
+    self.OutputScript.write( "rm texput.aux texput.log \n" )
+
+
+  def loop(self):
+    self.OutputScript.write( " " )
+    self.OutputScript.write( " " )
+
+class PlotGenerator(AbstractGenerator):
+  def __init__(self, PltConfig, GnuplotConfig):
+    AbstractGenerator.__init__(self, PltConfig, GnuplotConfig)
 
   ###
   ### Plot functions
@@ -412,7 +443,7 @@ class PlotGenerator:
       else:
         self.OutputScript.write( "set " + axis + "range [" + axisLimit[0] + ":" + axisLimit[1] + "]\n" )
 
-  def dumpPlotHeader(self):
+  def header(self):
     # Selected terminal
     self.selectedGnuplotTerminal = GnuplotTerminals[self.GnuplotConfig.terminalIdx];
 
@@ -456,7 +487,9 @@ class PlotGenerator:
 
     self.plotFileNameList = []
 
-  def dumpPlotFooter(self):
+  def footer(self):
+
+    self.OutputScript.write( "_EOF\n" )
     # Finally convert the set of pdf files in one pdf file with multiple pages
     if self.selectedGnuplotTerminal == "eps" or self.selectedGnuplotTerminal == "pdf":
       self.OutputScript.write( "CONV_FILENAMES=\"" )
@@ -474,16 +507,8 @@ class PlotGenerator:
       self.OutputScript.write( convert_cmd + " $CONV_FILENAMES \n")
       self.OutputScript.write( "rm ${CONV_FILENAMES} \n" )
 
-    # close gnuplot bash script and plot
-    self.OutputScript.close()
-    os.system( "bash " + self.PltConfig.plotFile + ".bash" )
 
-    if self.PltConfig.keepPlotScript == 0:
-      os.remove( self.OutputScript_name )
-
-
-
-  def loopPlot(self):
+  def loop(self):
 
     # Marks which file choice are we plotting
     currentFileConfigChoice = [ int(0) for i in range( len( self.fileConfig ) )]
@@ -589,8 +614,6 @@ class PlotGenerator:
           currentFileConfigChoice[i] += 1
           break
 
-    self.OutputScript.write( "_EOF\n" )
-
 
 
 class PlotConfiguration(dt.DataSet):
@@ -618,12 +641,13 @@ class PlotConfiguration(dt.DataSet):
     exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(5)" % (i) )
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
-  _bgFig = dt.BeginGroup("Plotting definition").set_pos(col=0)
-  selectPlotCfg = di.MultipleChoiceItem( "Plot Categories (Define which categories define the plotting lines)", aAvailableCfg, default=[2] )
-  skipFilteringPlotCfg = di.MultipleChoiceItem( "Categories not filtered (Define which category will be plotted )", aAvailableCfg, default=[] )
+  _bgFig = dt.BeginGroup("Output categories").set_pos(col=0)
+  selectPlotCfg = di.MultipleChoiceItem( "Categories that define the plotting lines", aAvailableCfg, default=[2] )
+  skipFilteringPlotCfg = di.MultipleChoiceItem( "Categories not filtered (X axis definition)", aAvailableCfg, default=[] )
   _egFig = dt.EndGroup("Plotting definition")
 
-  _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
+  _bgAx = dt.BeginGroup("Output definition").set_pos(col=1)
+  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=0)
   selectXValues = di.ChoiceItem("X values", XValues, default=XValueDefault)
   selectYValues = di.ChoiceItem("Y values", YValues, default=YValueDefault)
   _egAx = dt.EndGroup("Axis definition")
@@ -652,6 +676,13 @@ class GnuplotTemplate(dt.DataSet):
   _egBar = EndGroup("Bar plot extra code")
 
 
+class LatexTemplate(dt.DataSet):
+
+  _bgM = BeginGroup("Main latex code").set_pos(col=0)
+  LatexTemplate = di.TextItem("", LatexTemplateDefault)
+  _egM = EndGroup("Main latex code")
+
+
 if __name__ == '__main__':
 
   from guidata.qt.QtGui import QApplication
@@ -660,13 +691,22 @@ if __name__ == '__main__':
   _app = guidata.qapplication()
 
   config = PlotConfiguration("Plot Configutaion")
-  templates = GnuplotTemplate("GnuplotTemplate")
-  plts = PlotGenerator(config, templates)
+  gnuplot = GnuplotTemplate("Gnuplot Template")
+  latex = LatexTemplate("LaTeX Template")
 
-  g = dt.DataSetGroup( [config, templates], title='Python Gnuplot Generator' )
+  g = dt.DataSetGroup( [config, gnuplot, latex], title='Python Publication ready outputs' )
   while (1):
     if g.edit():
-      plts.generateOutput()
+
+      generator = []
+      if config.selectedOutput == 0:
+        generator = PlotGenerator(config, gnuplot)
+
+      elif config.selectedOutput == 1:
+        generator = TableGenerator(config, latex)
+      else:
+        continue
+      generator.generateOutput()
     else:
       break;
 

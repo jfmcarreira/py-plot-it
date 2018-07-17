@@ -100,6 +100,11 @@ def readResults(fname):
       if not line.startswith("#"):
         ResultsTable.append(line.split())
 
+def processLabel(label):
+  if label != "":
+    label = label[:-3]
+    label = label.replace('_', '\_')
+  return label
 
 ############################################################################################
 # Read configuration
@@ -279,26 +284,35 @@ class AbstractGenerator:
         continue
       filteredResults = filterResults( filteredResults, self.plotConfig[i].tab, self.plotConfig[i].configs[curr_idx] )
 
-    if applyFiltering:
-      for i in range( len( self.plotConfig )):
-        if self.PltConfig.selectXValues != self.plotConfig[i].tab and self.PltConfig.selectXValues != self.plotConfig[i].values_tab:
-          continue
-        for j in self.plotConfigChoice[i]:
-          for line in filteredResults:
-            if line[ self.plotConfig[i].tab - 1 ] == self.plotConfig[i].configs[j]:
-              currPlotData = [ line[self.PltConfig.selectYValues - 1] ]
-              currPlotData.append( line[self.PltConfig.selectXValues - 1] )
-              currPlotData.append( "\"" + self.barPlotLabelsCfg[barDataIndex] + "\"" )
-              barDataIndex += 1
-              plotResults.append( currPlotData )
-    else:
-      for line in filteredResults:
-        currPlotData = [ line[self.PltConfig.selectYValues - 1] ]
-        currPlotData.append( line[self.PltConfig.selectXValues - 1] )
-        currPlotData.append( "\"" + self.barPlotLabelsCfg[barDataIndex] + "\"" )
-        barDataIndex += 1
-        plotResults.append( currPlotData )
 
+
+    currentPointConfigChoice = [ int(0) for i in range( len( self.pointConfig ) )]
+    for point_idx in range( self.numberPoints ):
+      curr_point = filteredResults
+      barLabel = ""
+      for i in range( len( self.pointConfig )):
+        curr_idx = self.pointConfigChoice[i][currentPointConfigChoice[i]]
+        curr_point = filterResults( curr_point, self.pointConfig[i].tab, self.pointConfig[i].configs[curr_idx] )
+        barLabel += self.pointConfig[i].name[curr_idx] + " - "
+
+      curr_point = curr_point[0]
+      currPlotData = [ curr_point[self.PltConfig.selectYValues - 1] ]
+      currPlotData.append( curr_point[self.PltConfig.selectXValues - 1] )
+
+      barLabel = processLabel(barLabel)
+
+      currPlotData.append( "\"" + barLabel + "\"" )
+
+      for i in reversed(range( len( self.pointConfig ))):
+        if currentPointConfigChoice[i] ==  len( self.pointConfigChoice[i] ) - 1:
+          currentPointConfigChoice[i] = 0
+        else:
+          currentPointConfigChoice[i] += 1
+          break
+
+      plotResults.append( currPlotData )
+
+    print( plotResults )
     return plotResults
 
 
@@ -308,6 +322,11 @@ class AbstractGenerator:
       print( "Empty output!!" )
       return
 
+    if not ResultsTable:
+      readResults( self.PltConfig.resultsFile )
+
+    self.OutputResults = ResultsTable
+
     # General cfg variable
     self.aCfgChoice       = []
     # Configs for each group of plots
@@ -316,32 +335,33 @@ class AbstractGenerator:
     # Configs for each plot
     self.plotConfig       = []
     self.plotConfigChoice = []
+    # Configs for each point
+    self.pointConfig       = []
+    self.pointConfigChoice = []
 
     # Bar plot specific
     self.barPlotLabelsCfg = []
 
-    self.numberPlots = 1
     plotConditions = 0
+    self.numberPlots = 1
     self.numberLines = 1
+    self.numberPoints = 1
 
     for i in range( len( Configs )):
       exec("self.aCfgChoice.append( self.PltConfig.cfgChoice%d )" % (i) )
-      use_for_plot = 0
-      skip_filtering = 0
-      for j in self.PltConfig.selectPlotCfg:
+      use_for_plot = False
+      use_for_points = False
+      for j in self.PltConfig.linesPlotCfg:
         if Configs[i].title == self.PltConfig.aAvailableCfg[j]:
-          use_for_plot = 1
+          use_for_plot = True
           break
 
-      for j in self.PltConfig.skipFilteringPlotCfg:
+      for j in self.PltConfig.pointsPlotCfg:
         if Configs[i].title == self.PltConfig.aAvailableCfg[j]:
-          if Configs[i].tab == self.PltConfig.selectXValues:
-            for label in Configs[i].name:
-              self.barPlotLabelsCfg.append( label )
-          skip_filtering = 1
+          use_for_points = True
           break
 
-      if not skip_filtering:
+      if not use_for_points:
         if use_for_plot == 0:
           self.fileConfig.append( Configs[i] )
           self.fileConfigChoice.append( self.aCfgChoice[i] )
@@ -350,26 +370,25 @@ class AbstractGenerator:
           plotConditions += 1
           self.plotConfig.append( Configs[i] )
           self.plotConfigChoice.append( self.aCfgChoice[i] )
-          if self.PltConfig.selectXValues != Configs[i].tab and self.PltConfig.selectXValues != Configs[i].values_tab:
-            self.numberLines *= len( self.aCfgChoice[i] )
+          self.numberLines *= len( self.aCfgChoice[i] )
+        configList = []
+        for j in self.aCfgChoice[i]:
+          configList.append( Configs[i].configs[j] )
+        self.OutputResults = filterSeveralResults( self.OutputResults, Configs[i].tab, configList )
+      else:
+        for label in Configs[i].name:
+          self.barPlotLabelsCfg.append( label )
+        self.pointConfig.append( Configs[i] )
+        self.pointConfigChoice.append( self.aCfgChoice[i] )
+        self.numberPoints *= len( self.aCfgChoice[i] )
+
 
     if self.numberPlots == 0 or plotConditions == 0:
       return
 
-    print( "Generation %d plots with %d lines!" % (self.numberPlots, self.numberLines) )
+    print( "Generation %d plots with %d lines and %d points!" % (self.numberPlots, self.numberLines, self.numberPoints) )
     print( "Using columns %d vs %d" % (self.PltConfig.selectXValues - 1, self.PltConfig.selectYValues - 1) )
 
-
-    if not ResultsTable:
-      readResults( self.PltConfig.resultsFile )
-
-    configChoiceCurrent = [ int(0) for i in range( len( Configs ) )]
-    self.OutputResults = ResultsTable
-    for i in range( len( Configs )):
-      configList = []
-      for j in self.aCfgChoice[i]:
-        configList.append( Configs[i].configs[j] )
-      self.OutputResults = filterSeveralResults( self.OutputResults, Configs[i].tab, configList )
 
     self.OutputScript = open( self.PltConfig.plotFile + ".bash", 'w' )
     # Write bash header
@@ -385,7 +404,6 @@ class AbstractGenerator:
 
     if self.PltConfig.keepPlotScript == 0:
       os.remove( self.OutputScript_name )
-
 
     print("Finished!")
 
@@ -540,16 +558,11 @@ class PlotGenerator(AbstractGenerator):
 
         ## configure legend
         legend = ""
-        applyFiltering = False
         for i in range( len( self.plotConfig )):
           curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
-          if self.PltConfig.selectXValues == self.plotConfig[i].tab or self.PltConfig.selectXValues == self.plotConfig[i].values_tab:
-            continue
           legend += self.plotConfig[i].name[curr_idx] + " - "
 
-        if legend != "":
-          legend = legend[:-3]
-          legend = legend.replace('_', '\_')
+        legend = processLabel(legend)
 
         plotResults = self.getData( currentFileConfigChoice, currentPlotConfigChoice )
 
@@ -576,8 +589,6 @@ class PlotGenerator(AbstractGenerator):
         ## try to increment the last config! if not possible
         ## try to increment the previous one and so one
         for i in reversed(range( len( self.plotConfig ))):
-          if self.PltConfig.selectXValues == self.plotConfig[i].tab or self.PltConfig.selectXValues == self.plotConfig[i].values_tab:
-            continue
           if currentPlotConfigChoice[i] ==  len( self.plotConfigChoice[i] ) - 1:
             currentPlotConfigChoice[i] = 0
           else:
@@ -596,6 +607,8 @@ class PlotGenerator(AbstractGenerator):
 
         if self.GnuplotConfig.showTitle:
           self.OutputScript.write( "set title '" + plotCurrentTitle + "'\n" )
+        else:
+          self.OutputScript.write( "unset title'\n" )
 
         self.OutputScript.write( plotCommand[:-1] + "\n" )
         for line in plotData:
@@ -642,8 +655,8 @@ class PlotConfiguration(dt.DataSet):
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
   _bgFig = dt.BeginGroup("Output categories").set_pos(col=0)
-  selectPlotCfg = di.MultipleChoiceItem( "Categories that define the plotting lines", aAvailableCfg, default=[2] )
-  skipFilteringPlotCfg = di.MultipleChoiceItem( "Categories not filtered (X axis definition)", aAvailableCfg, default=[] )
+  linesPlotCfg = di.MultipleChoiceItem( "Categories for lines", aAvailableCfg, default=[2] )
+  pointsPlotCfg = di.MultipleChoiceItem( "Categories for points)", aAvailableCfg, default=[] )
   _egFig = dt.EndGroup("Plotting definition")
 
   _bgAx = dt.BeginGroup("Output definition").set_pos(col=1)
@@ -713,3 +726,4 @@ if __name__ == '__main__':
 
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;
+

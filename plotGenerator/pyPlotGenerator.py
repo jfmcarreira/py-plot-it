@@ -748,7 +748,7 @@ class PlotConfiguration(dt.DataSet):
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
   _bgFig = dt.BeginGroup("").set_pos(col=0)
-  linesPlotCfg = di.MultipleChoiceItem( "Categories for lines", aAvailableCfg, default=[2] )
+  linesPlotCfg = di.MultipleChoiceItem( "Categories for lines", aAvailableCfg, default=[] )
   pointsPlotCfg = di.MultipleChoiceItem( "Categories for points", aAvailableCfg, default=[] )
   skipFilterCfg = di.MultipleChoiceItem( "Categories to skip", aAvailableCfg, default=[] )
   _egFig = dt.EndGroup("")

@@ -106,6 +106,7 @@ def processLabel(label):
     label = label.replace('_', '\_')
   return label
 
+
 ############################################################################################
 # Read configuration
 ############################################################################################
@@ -125,57 +126,68 @@ if not 'ConfigMapping' in globals():
   ConfigMapping = []
 
 if not 'LatexTemplateDefault' in globals():
-  LatexTemplateDefault = " "
+  LatexTemplateDefault = """
+
+"""
 
 if not 'GnuPlotTemplateDefault' in globals():
   GnuPlotTemplateDefault = """
-  font 'TimesNewRoman,14'
+font 'TimesNewRoman,14'
 
-  set datafile missing '-'
+set datafile missing '-'
 
-  set grid
-  #set size square {1,.5}
+set grid
+#set size square {1,.5}
 
-  set title center  offset character 0, -.9
+set title center  offset character 0, -.9
 
-  set xlabel center
-  set ylabel center offset character 1, 0
+set xlabel center
+set ylabel center offset character 1, 0
 
+set key spacing 1 width 0
 
-  set key spacing 1 width 0
+set style line 4 lc 1 lt  1 lw 2 pt  2 ps 1
+set style line 2 lc 2 lt  2 lw 2 pt  3 ps 1
+set style line 3 lc 3 lt  4 lw 2 pt  4 ps 1
+set style line 1 lc 4 lt  4 lw 2 pt  10 ps 1
+set style line 5 lc 7 lt  3 lw 2 pt  6 ps 1
+set style line 6 lc 8 lt  6 lw 2 pt  8 ps 1
+set style line 7 lc 2 lt  7 lw 2 pt  8 ps 1
+set style line 8 lc 3 lt  8 lw 2 pt  9 ps 1
+set style line 9 lc 4 lt  9 lw 2 pt  10 ps 1
 
-  set style line 4 lc 1 lt  1 lw 2 pt  2 ps 1
-  set style line 2 lc 2 lt  2 lw 2 pt  3 ps 1
-  set style line 3 lc 3 lt  4 lw 2 pt  4 ps 1
-  set style line 1 lc 4 lt  4 lw 2 pt  10 ps 1
-  set style line 5 lc 7 lt  3 lw 2 pt  6 ps 1
-  set style line 6 lc 8 lt  6 lw 2 pt  8 ps 1
-  set style line 7 lc 2 lt  7 lw 2 pt  8 ps 1
-  set style line 8 lc 3 lt  8 lw 2 pt  9 ps 1
-  set style line 9 lc 4 lt  9 lw 2 pt  10 ps 1
+set style line 100 lc 1 lw 3
+set style line 101 lc 4 lw 3
+set style line 102 lc 2 lw 3
+set style line 103 lc 3 lw 3
 
-  set style line 100 lc 1 lw 3
-  set style line 101 lc 4 lw 3
-  set style line 102 lc 2 lw 3
-  set style line 103 lc 3 lw 3
+#set rmargin 1
 
-  #set rmargin 1
-
-  """
+"""
 
 if not 'GnuPlotTemplateBarPlotDefault' in globals():
   GnuPlotTemplateBarPlotDefault = """
+set style histogram clustered  gap 2
+set grid y
+set style data histograms
+set style fill solid
+set boxwidth 1
 
-  set style histogram clustered  gap 1.5
-  set grid y
-  set style data histograms
-  set style fill solid
-  set boxwidth 1
+set xtics rotate by 45 right
+set bmargin 5
 
-  set xtics rotate by 30 offset 0,-1
-  set bmargin 5
+"""
 
-  """
+if not 'GnuPlotTemplateExtra' in globals():
+  GnuPlotTemplateExtra = """
+# Extra template
+"""
+
+if not 'GnuPlotTemplateBarPlotExtra' in globals():
+  GnuPlotTemplateBarPlotExtra = """
+# Extra template
+"""
+
 
 if not 'FilterNonExistent' in globals():
   FilterNonExistent = 0
@@ -192,6 +204,18 @@ if not 'AxisLimitDefaultX' in globals():
 if not 'AxisLimitDefaultY' in globals():
   AxisLimitDefaultY = ""
 
+if not 'XValues' in globals():
+  XValues = []
+if not 'YValues' in globals():
+  YValues = []
+if not 'AxisValues' in globals():
+  AxisValues = []
+
+for i in  XValues:
+  AxisValues.append( i )
+for i in YValues:
+  AxisValues.append( i )
+
 if not 'XValueDefault' in globals():
   XValueDefault = 0
 if not 'YValueDefault' in globals():
@@ -202,8 +226,6 @@ if not 'GenerateBarPlotDefault' in globals():
 
 if not 'GnuplotTerminalDefault' in globals():
   GnuplotTerminalDefault = "eps"
-
-g_AxisValues = [XValues, YValues]
 
 ############################################################################################
 # Read data file
@@ -283,8 +305,6 @@ class AbstractGenerator:
         applyFiltering = True
         continue
       filteredResults = filterResults( filteredResults, self.plotConfig[i].tab, self.plotConfig[i].configs[curr_idx] )
-
-
 
     currentPointConfigChoice = [ int(0) for i in range( len( self.pointConfig ) )]
     for point_idx in range( self.numberPoints ):
@@ -395,7 +415,74 @@ class AbstractGenerator:
     self.OutputScript.write( "#!/bin/bash\n" )
 
     self.header()
-    self.loop()
+
+    # Marks which file choice are we plotting
+    currentFileConfigChoice = [ int(0) for i in range( len( self.fileConfig ) )]
+
+    # Loops through all files
+    for file_idx in range( self.numberPlots ):
+
+      last = False
+
+      ## Configure title and file name
+      self.currentFileName = ""
+      self.currentTitle = ""
+      for i in range( len( self.fileConfig )):
+        curr_idx = self.fileConfigChoice[i][currentFileConfigChoice[i]]
+        self.currentFileName += self.fileConfig[i].configs[curr_idx] + "_"
+        if len(self.fileConfigChoice[i]) > 1:
+          if self.fileConfig[i].name[curr_idx]:
+            self.currentTitle += self.fileConfig[i].name[curr_idx] + " - "
+
+      self.currentFileName = self.currentFileName[:-1]
+      self.currentTitle = self.currentTitle[:-3]
+
+      # Marks which line choice are we plotting
+      currentPlotConfigChoice = [ int(0) for i in range( len( self.plotConfig ) )]
+
+      ## Loop through each plot on the current file (several lines)
+      for plot_idx in range( self.numberLines ):
+
+        if plot_idx == self.numberLines - 1:
+          last = True
+
+        ## configure legend
+        self.currentLegend = ""
+        for i in range( len( self.plotConfig )):
+          curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
+          self.currentLegend += self.plotConfig[i].name[curr_idx] + " - "
+
+        self.currentLegend = processLabel(self.currentLegend)
+
+        plotResults = self.getData( currentFileConfigChoice, currentPlotConfigChoice )
+
+        ## check empty data -> trigger an exception
+        if not plotResults:
+          print("No data to plot! skipping...")
+          continue
+
+        self.loop( file_idx, plot_idx, last, plotResults)
+
+        ## setup variables for the next line within the same plot
+        ## try to increment the last config! if not possible
+        ## try to increment the previous one and so one
+        for i in reversed(range( len( self.plotConfig ))):
+          if currentPlotConfigChoice[i] ==  len( self.plotConfigChoice[i] ) - 1:
+            currentPlotConfigChoice[i] = 0
+          else:
+            currentPlotConfigChoice[i] += 1
+            break
+
+      ## setup variables for the next file
+      ## try to increment the last config! if not possible
+      ## try to increment the previous one and so one
+      for i in reversed(range( len( self.fileConfig ))):
+        if currentFileConfigChoice[i] ==  len( self.fileConfigChoice[i] ) - 1:
+          currentFileConfigChoice[i] = 0
+        else:
+          currentFileConfigChoice[i] += 1
+          break
+
     self.footer()
 
     # close gnuplot bash script and plot
@@ -408,25 +495,91 @@ class AbstractGenerator:
     print("Finished!")
 
 
+def processLatexText(label):
+  label = label.replace( "\\\\", "\\\\\\\\")
+  label = label.replace( "%", "\%")
+  return label
+
 class TableGenerator(AbstractGenerator):
   def __init__(self, PltConfig, GnuplotConfig):
     AbstractGenerator.__init__(self, PltConfig, GnuplotConfig)
 
   def header(self):
     self.OutputScript.write( "pdflatex -halt-on-error << _EOF\n" )
+    LatexHeader = """\documentclass{article}
+\\usepackage{adjustbox,tabularx, colortbl, ctable, array, multirow}
+"""
+    self.OutputScript.write( LatexHeader )
     self.OutputScript.write( self.GnuplotConfig.LatexTemplate )
 
+    LatexHeader = "\\usepackage[active,tightpage]{preview} \n\PreviewEnvironment{tabular} \n\\begin{document} \n\pagestyle{empty} \n\\begin{table}[!t] \n\\begin{tabular}"
+
+    # get test data for headers
+    plotResults = self.getData( [ int(0) for i in range( len( self.fileConfig ) )], [ int(0) for i in range( len( self.plotConfig ) )] )
+
+    TableHeader = "\\toprule \n"
+
+    LatexHeader += "{"
+
+    self.showTitle = False
+    TitleHeader = ""
+    for i in range( len( self.fileConfig ) ):
+      if len( self.fileConfigChoice[i] ) > 1:
+        TitleHeader += self.fileConfig[i].title + " / "
+
+    if not TitleHeader == "":
+      LatexHeader += "l"
+      TableHeader += processLabel( TitleHeader ) + " & "
+      self.showTitle = True
+
+
+    LegendHeader = ""
+    for cfg in self.plotConfig:
+      LegendHeader += cfg.title + " / "
+    LatexHeader += "l"
+    TableHeader += processLabel( LegendHeader )
+
+
+    #print( "Generation %d plots with %d lines and %d points!" % (self.numberPlots, self.numberLines, self.numberPoints) )
+
+    for i in range ( len( plotResults ) ):
+      LatexHeader += "c"
+      TableHeader += "& " + plotResults[i][2][1:-1]
+    LatexHeader += "}"
+    TableHeader += "\\\\ \midrule \n"
+
+
+    self.OutputScript.write( LatexHeader + "\n" + processLatexText( TableHeader ) + "\n" )
 
   def footer(self):
-    self.OutputScript.write( "\n\end{document}_EOF\n" )
+    TableFooter = "\\bottomrule\n\end{tabular}\n\end{table}\n\end{document}"
+    self.OutputScript.write( TableFooter )
     self.OutputScript.write( "\n_EOF\n" )
     self.OutputScript.write( "mv texput.pdf " + self.PltConfig.plotFile + ".pdf\n")
     self.OutputScript.write( "rm texput.aux texput.log \n" )
 
 
-  def loop(self):
-    self.OutputScript.write( " " )
-    self.OutputScript.write( " " )
+  def loop( self, file_idx, plot_idx, last, plotResults):
+
+    TableLine = ""
+
+    if self.showTitle:
+      if plot_idx == 0:
+        TableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + self.currentTitle + "} & "
+      else:
+        TableLine += " & "
+
+    TableLine += self.currentLegend
+
+    for i in range ( len( plotResults ) ):
+      TableLine += " & " + plotResults[i][0]
+
+    TableLine += "\\\\ \n"
+
+    if last:
+      TableLine += "\midrule \n"
+
+    self.OutputScript.write( processLatexText( TableLine ) )
 
 class PlotGenerator(AbstractGenerator):
   def __init__(self, PltConfig, GnuplotConfig):
@@ -437,9 +590,9 @@ class PlotGenerator(AbstractGenerator):
   ###
   def dumpAxisLabels(self, axisName):
     if axisName == "x":
-      axis_values = g_AxisValues[0]
+      axis_values = AxisValues
     elif axisName == "y":
-      axis_values = g_AxisValues[1]
+      axis_values = AxisValues
     else:
       return
 
@@ -525,107 +678,46 @@ class PlotGenerator(AbstractGenerator):
       self.OutputScript.write( convert_cmd + " $CONV_FILENAMES \n")
       self.OutputScript.write( "rm ${CONV_FILENAMES} \n" )
 
+  def loop(self, file_idx, plot_idx, last, plotResults):
 
-  def loop(self):
+    if not self.GnuplotConfig.showBars:
+      plotResults = sorted(plotResults, key=lambda line: float(line[1]))
+    # Init gnuplot data point and command
+    if plot_idx == 0:
+      self.plotData = []
+      self.plotCommand = "plot"
 
-    # Marks which file choice are we plotting
-    currentFileConfigChoice = [ int(0) for i in range( len( self.fileConfig ) )]
+    for line in plotResults:
+      self.plotData.append( line )
+    self.plotData.append( ["e"] )
 
-    # Loops through all files
-    for file_idx in range( self.numberPlots ):
+    if self.GnuplotConfig.showBars:
+      self.plotCommand += " '-' using 1:xtic(3) ls " + str( plot_idx + 100 )
+      #self.plotCommand += " ti col"
+    else:
+      self.plotCommand += " '-' using 2:1 w lp ls " + str( plot_idx + 1 )
+    self.plotCommand += " title '" + self.currentLegend + "',"
 
-      ## Configure title and file name
-      plotCurrentFileName = ""
-      plotCurrentTitle = ""
-      for i in range( len( self.fileConfig )):
-        curr_idx = self.fileConfigChoice[i][currentFileConfigChoice[i]]
-        plotCurrentFileName += self.fileConfig[i].configs[curr_idx] + "_"
-        if self.fileConfig[i].name[curr_idx]:
-          plotCurrentTitle += self.fileConfig[i].name[curr_idx] + " - "
+    if last:
+      self.plotFileNameList.append( self.currentFileName ) # keep a list of files to convert
+      if self.selectedGnuplotTerminal == "eps":
+        self.currentFileName += ".eps"
+      elif self.selectedGnuplotTerminal == "pdf":
+        self.currentFileName += ".pdf"
 
-      plotCurrentFileName = plotCurrentFileName[:-1]
-      plotCurrentTitle = plotCurrentTitle[:-3]
+      self.OutputScript.write( "set output '"  + self.currentFileName + "'\n" )
 
-      # Marks which line choice are we plotting
-      currentPlotConfigChoice = [ int(0) for i in range( len( self.plotConfig ) )]
+      if self.GnuplotConfig.showTitle:
+        self.OutputScript.write( "set title '" + self.currentTitle + "'\n" )
+      else:
+        self.OutputScript.write( "unset title'\n" )
 
-      # Init gnuplot data point and command
-      plotData = []
-      plotCommand = "plot"
-
-      ## Loop through each plot on the current file (several lines)
-      for plot_idx in range( self.numberLines ):
-
-        ## configure legend
-        legend = ""
-        for i in range( len( self.plotConfig )):
-          curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
-          legend += self.plotConfig[i].name[curr_idx] + " - "
-
-        legend = processLabel(legend)
-
-        plotResults = self.getData( currentFileConfigChoice, currentPlotConfigChoice )
-
-        ## check empty data -> trigger an exception
-        if not plotResults:
-          print("No data to plot! skipping...")
-          continue
-
-        plotResultsSort = plotResults
-        if not self.GnuplotConfig.showBars:
-          plotResultsSort = sorted(plotResultsSort, key=lambda line: float(line[1]))
-        for line in plotResultsSort:
-          plotData.append( line )
-        plotData.append( ["e"] )
-
-        if self.GnuplotConfig.showBars:
-          plotCommand += " '-' using 1:xtic(3) ls " + str( plot_idx + 100 )
-          #plotCommand += " ti col"
-        else:
-          plotCommand += " '-' using 2:1 w lp ls " + str( plot_idx + 1 )
-        plotCommand += " title '" + legend + "',"
-
-        ## setup variables for the next line within the same plot
-        ## try to increment the last config! if not possible
-        ## try to increment the previous one and so one
-        for i in reversed(range( len( self.plotConfig ))):
-          if currentPlotConfigChoice[i] ==  len( self.plotConfigChoice[i] ) - 1:
-            currentPlotConfigChoice[i] = 0
-          else:
-            currentPlotConfigChoice[i] += 1
-            break
-
-      # dump title, output, plot command and data points
-      if not plotCommand == "plot":
-        self.plotFileNameList.append( plotCurrentFileName ) # keep a list of files to convert
-        if self.selectedGnuplotTerminal == "eps":
-          plotCurrentFileName += ".eps"
-        if self.selectedGnuplotTerminal == "pdf":
-          plotCurrentFileName += ".pdf"
-
-        self.OutputScript.write( "set output '"  + plotCurrentFileName + "'\n" )
-
-        if self.GnuplotConfig.showTitle:
-          self.OutputScript.write( "set title '" + plotCurrentTitle + "'\n" )
-        else:
-          self.OutputScript.write( "unset title'\n" )
-
-        self.OutputScript.write( plotCommand[:-1] + "\n" )
-        for line in plotData:
-          for item in line:
-            self.OutputScript.write( "%s " % (item) )
-          self.OutputScript.write( "\n")
+      self.OutputScript.write( self.plotCommand[:-1] + "\n" )
+      for line in self.plotData:
+        for item in line:
+          self.OutputScript.write( "%s " % (item) )
         self.OutputScript.write( "\n")
-
-      ## setup variables for the next file
-      ## try to increment the last config! if not possible
-      ## try to increment the previous one and so one
-      for i in reversed(range( len( self.fileConfig ))):
-        if currentFileConfigChoice[i] ==  len( self.fileConfigChoice[i] ) - 1:
-          currentFileConfigChoice[i] = 0
-        else:
-          currentFileConfigChoice[i] += 1
-          break
+      self.OutputScript.write( "\n")
 
 
 
@@ -633,7 +725,8 @@ class PlotConfiguration(dt.DataSet):
   ############################################################################################
   # Class Initialization
   ############################################################################################
-  resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
+  resultsFile = ResultsFileDefault
+  #resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
   plotFile = di.StringItem("Output", default = PlotFileDefault ).set_pos(col=0)
   keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
 
@@ -651,19 +744,22 @@ class PlotConfiguration(dt.DataSet):
       displayList = cfg.configs
     if cfg.selectAll == 1:
       defaults=[ i for i in range(len(cfg.configs)) ]
-    exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(5)" % (i) )
+    exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(7)" % (i) )
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
-  _bgFig = dt.BeginGroup("Output categories").set_pos(col=0)
+  _bgFig = dt.BeginGroup("").set_pos(col=0)
   linesPlotCfg = di.MultipleChoiceItem( "Categories for lines", aAvailableCfg, default=[2] )
-  pointsPlotCfg = di.MultipleChoiceItem( "Categories for points)", aAvailableCfg, default=[] )
-  _egFig = dt.EndGroup("Plotting definition")
+  pointsPlotCfg = di.MultipleChoiceItem( "Categories for points", aAvailableCfg, default=[] )
+  skipFilterCfg = di.MultipleChoiceItem( "Categories to skip", aAvailableCfg, default=[] )
+  _egFig = dt.EndGroup("")
 
   _bgAx = dt.BeginGroup("Output definition").set_pos(col=1)
   selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=0)
-  selectXValues = di.ChoiceItem("X values", XValues, default=XValueDefault)
-  selectYValues = di.ChoiceItem("Y values", YValues, default=YValueDefault)
-  _egAx = dt.EndGroup("Axis definition")
+  print( AxisValues )
+  selectXValues = di.ChoiceItem("X values", AxisValues, default=XValueDefault)
+  selectYValues = di.ChoiceItem("Y values", AxisValues, default=YValueDefault)
+  _egAx = dt.EndGroup("Output definition")
+
 
 
 class GnuplotTemplate(dt.DataSet):
@@ -682,10 +778,10 @@ class GnuplotTemplate(dt.DataSet):
   _egAx = dt.EndGroup("Axis definition")
 
   _bgM = BeginGroup("Main gnuplot code").set_pos(col=0)
-  GnuPlotTemplate = di.TextItem("", GnuPlotTemplateDefault)
+  GnuPlotTemplate = di.TextItem("", GnuPlotTemplateDefault + GnuPlotTemplateExtra )
   _egM = EndGroup("Main gnuplot code")
   _bgBar = BeginGroup("Bar plot extra code").set_pos(col=1)
-  GnuPlotTemplateBarPlot = di.TextItem("", GnuPlotTemplateBarPlotDefault)
+  GnuPlotTemplateBarPlot = di.TextItem("", GnuPlotTemplateBarPlotDefault + GnuPlotTemplateBarPlotExtra )
   _egBar = EndGroup("Bar plot extra code")
 
 

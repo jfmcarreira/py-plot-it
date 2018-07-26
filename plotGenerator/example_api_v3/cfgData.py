@@ -63,64 +63,18 @@ GenerateBarPlotDefault = 0
 GnuplotTerminalDefault = 1
 
 
-
 ###################################################################################################################
-# Gnuplot template
+# Template
 
-GnuPlotTemplateDefault = """
-font 'TimesNewRoman,14'
-
-set datafile missing '-'
-
-set grid
-#set size square {1,.5}
-
-set title center  offset character 0, -.9
-
-set xlabel center
-set ylabel center offset character 1, 0
-
-
-set key box spacing 1 width 0
-
-set style line 4 lc 1 lt  1 lw 2 pt  2 ps 1
-set style line 2 lc 2 lt  2 lw 2 pt  3 ps 1
-set style line 3 lc 3 lt  4 lw 2 pt  4 ps 1
-set style line 1 lc 4 lt  4 lw 2 pt  10 ps 1
-set style line 5 lc 7 lt  3 lw 2 pt  6 ps 1
-set style line 6 lc 8 lt  6 lw 2 pt  8 ps 1
-set style line 7 lc 2 lt  7 lw 2 pt  8 ps 1
-set style line 8 lc 3 lt  8 lw 2 pt  9 ps 1
-set style line 9 lc 4 lt  9 lw 2 pt  10 ps 1
-
-set style line 100 lc 1 lw 3
-set style line 101 lc 4 lw 3
-set style line 102 lc 2 lw 3
-set style line 103 lc 3 lw 3
-
-#set rmargin 1
-
+GnuPlotTemplateExtra = """
+# Extra template
 """
 
-GnuPlotTemplateBarPlotDefault = """
-
-set style histogram clustered  gap 1.5
-set grid y
-set style data histograms
-set style fill solid
-set boxwidth 1
-
-set xtics rotate by 30 offset 0,-1
-set bmargin 5
-
+GnuPlotTemplateBarPlotExtra = """
+# Extra template for bar graph
 """
 
 
 LatexTemplateDefault = """
-\\documentclass{article}
-\\usepackage{adjustbox,tabularx, colortbl, ctable, array, multirow}
-\\begin{document}
-adasdasdas
-
+% Extra latex argurment before begin document
 """
-

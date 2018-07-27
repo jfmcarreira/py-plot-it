@@ -44,6 +44,12 @@ class ConfigurationList:
     self.showLabels = 1
 
 
+## Plot results definition
+prLabel   = 0
+prX       = 1
+prY       = 2
+prYextra  = 3
+
 ############################################################################################
 # Auxiliary functions
 ############################################################################################
@@ -105,7 +111,6 @@ def processLabel(label):
     label = label[:-3]
     label = label.replace('_', '\_')
   return label
-
 
 ############################################################################################
 # Read configuration
@@ -283,9 +288,8 @@ elif ConfigVersion == 3:
 ############################################################################################
 class AbstractGenerator:
 
-  def __init__(self, PltConfig, GnuplotConfig):
+  def __init__(self, PltConfig):
     self.PltConfig = PltConfig
-    self.GnuplotConfig = GnuplotConfig
 
   def getData(self, currentFileConfigChoice, currentPlotConfigChoice):
 
@@ -315,24 +319,27 @@ class AbstractGenerator:
         curr_point = filterResults( curr_point, self.pointConfig[i].tab, self.pointConfig[i].configs[curr_idx] )
         barLabel += self.pointConfig[i].name[curr_idx] + " - "
 
-      curr_point = curr_point[0]
-      currPlotData = [ curr_point[self.PltConfig.selectYValues - 1] ]
-      currPlotData.append( curr_point[self.PltConfig.selectXValues - 1] )
+      if not curr_point == []:
+        curr_point = curr_point[0] # Discard remaining results
+        # TODO: Add average
 
-      barLabel = processLabel(barLabel)
+        currPlotData = []
+        currPlotData.append( "\"" + processLabel(barLabel) + "\"" )
+        currPlotData.append( curr_point[self.PltConfig.selectXValues - 1] )
+        currPlotData.append( curr_point[self.PltConfig.selectYValues - 1] )
+        if self.PltConfig.showExtra:
+          currPlotData.append( curr_point[self.PltConfig.selectExtraYValues - 1] )
 
-      currPlotData.append( "\"" + barLabel + "\"" )
 
-      for i in reversed(range( len( self.pointConfig ))):
-        if currentPointConfigChoice[i] ==  len( self.pointConfigChoice[i] ) - 1:
-          currentPointConfigChoice[i] = 0
-        else:
-          currentPointConfigChoice[i] += 1
-          break
+        for i in reversed(range( len( self.pointConfig ))):
+          if currentPointConfigChoice[i] ==  len( self.pointConfigChoice[i] ) - 1:
+            currentPointConfigChoice[i] = 0
+          else:
+            currentPointConfigChoice[i] += 1
+            break
 
-      plotResults.append( currPlotData )
+        plotResults.append( currPlotData )
 
-    print( plotResults )
     return plotResults
 
 
@@ -362,7 +369,7 @@ class AbstractGenerator:
     # Bar plot specific
     self.barPlotLabelsCfg = []
 
-    plotConditions = 0
+    plotConditions = 1
     self.numberPlots = 1
     self.numberLines = 1
     self.numberPoints = 1
@@ -387,7 +394,7 @@ class AbstractGenerator:
           self.fileConfigChoice.append( self.aCfgChoice[i] )
           self.numberPlots *= len( self.aCfgChoice[i] )
         else:
-          plotConditions += 1
+          #plotConditions += 1
           self.plotConfig.append( Configs[i] )
           self.plotConfigChoice.append( self.aCfgChoice[i] )
           self.numberLines *= len( self.aCfgChoice[i] )
@@ -461,6 +468,7 @@ class AbstractGenerator:
           print("No data to plot! skipping...")
           continue
 
+        print( plotResults )
         self.loop( file_idx, plot_idx, last, plotResults)
 
         ## setup variables for the next line within the same plot
@@ -487,7 +495,8 @@ class AbstractGenerator:
 
     # close gnuplot bash script and plot
     self.OutputScript.close()
-    os.system( "bash " + self.PltConfig.plotFile + ".bash" )
+    #os.system( "bash " + self.PltConfig.plotFile + ".bash" )
+    os.system( "bash " + self.PltConfig.plotFile + ".bash > /dev/null" )
 
     if self.PltConfig.keepPlotScript == 0:
       os.remove( self.OutputScript_name )
@@ -501,8 +510,9 @@ def processLatexText(label):
   return label
 
 class TableGenerator(AbstractGenerator):
-  def __init__(self, PltConfig, GnuplotConfig):
-    AbstractGenerator.__init__(self, PltConfig, GnuplotConfig)
+  def __init__(self, PltConfig, Template):
+    AbstractGenerator.__init__(self, PltConfig)
+    self.Template = Template
 
   def header(self):
     self.OutputScript.write( "pdflatex -halt-on-error << _EOF\n" )
@@ -510,7 +520,7 @@ class TableGenerator(AbstractGenerator):
 \\usepackage{adjustbox,tabularx, colortbl, ctable, array, multirow}
 """
     self.OutputScript.write( LatexHeader )
-    self.OutputScript.write( self.GnuplotConfig.LatexTemplate )
+    self.OutputScript.write( self.Template.LatexTemplate )
 
     LatexHeader = "\\usepackage[active,tightpage]{preview} \n\PreviewEnvironment{tabular} \n\\begin{document} \n\pagestyle{empty} \n\\begin{table}[!t] \n\\begin{tabular}"
 
@@ -531,27 +541,88 @@ class TableGenerator(AbstractGenerator):
       LatexHeader += "l"
       TableHeader += processLabel( TitleHeader ) + " & "
       self.showTitle = True
-
+    elif self.PltConfig.showAverage:
+      LatexHeader += "l"
+      TableHeader += " & "
 
     LegendHeader = ""
     for cfg in self.plotConfig:
       LegendHeader += cfg.title + " / "
-    LatexHeader += "l"
-    TableHeader += processLabel( LegendHeader )
+
+    if not LegendHeader == "":
+      LatexHeader += "l"
+      TableHeader += processLabel( LegendHeader ) + " & "
 
 
     #print( "Generation %d plots with %d lines and %d points!" % (self.numberPlots, self.numberLines, self.numberPoints) )
 
-    for i in range ( len( plotResults ) ):
+    self.TableHeaderLabels = []
+    for i in range ( self.numberPoints ):
       LatexHeader += "c"
-      TableHeader += "& " + plotResults[i][2][1:-1]
-    LatexHeader += "}"
-    TableHeader += "\\\\ \midrule \n"
+      TableHeader += plotResults[i][prLabel][1:-1] + " & "
+      self.TableHeaderLabels.append( plotResults[i][prLabel] )
 
+    TableHeader = TableHeader[:-3]
+    LatexHeader += "}"
+    TableHeader += "\\\\ \n\midrule"
 
     self.OutputScript.write( LatexHeader + "\n" + processLatexText( TableHeader ) + "\n" )
 
+    if self.PltConfig.showAverage:
+      self.avergeArray = [ float(0) for i in range( self.numberPoints * self.numberPlots )]
+      self.avergeArrayCount = self.avergeArray
+    self.avergeIndex = 0
+
+    if self.PltConfig.showExtra:
+      self.avergeExtraArray = self.avergeArray
+
+  def printAverage(self):
+
+    self.OutputScript.write( "\multirow{" + str( self.numberLines ) + "}{*}{\\textbf{Average}}\n" )
+
+    self.avergeIndex = 0
+    ## Loop through each plot on the current file (several lines)
+    currentPlotConfigChoice = [ int(0) for i in range( len( self.plotConfig ) )] # Marks which line choice are we plotting
+    for plot_idx in range( self.numberLines ):
+
+      TableLine = "& "
+
+      ## configure legend
+      self.currentLegend = ""
+      for i in range( len( self.plotConfig )):
+        curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
+        self.currentLegend += self.plotConfig[i].name[curr_idx] + " - "
+      self.currentLegend = processLabel(self.currentLegend)
+
+      if not self.currentLegend == "":
+        TableLine += self.currentLegend + " & "
+
+      for i in range ( self.numberPoints ):
+        TableLine += str(round( self.avergeArray[self.avergeIndex], 2 ))
+        if self.PltConfig.showExtra:
+          TableLine += " (" + str(round( self.avergeExtraArray[self.avergeIndex], 2)) + ")"
+        TableLine += " & "
+        self.avergeIndex += 1
+
+      TableLine = TableLine[:-3]
+      TableLine += "\\\\ \n"
+      self.OutputScript.write( processLatexText( TableLine ) )
+
+      ## LOOP
+      for i in reversed(range( len( self.plotConfig ))):
+        if currentPlotConfigChoice[i] ==  len( self.plotConfigChoice[i] ) - 1:
+          currentPlotConfigChoice[i] = 0
+        else:
+          currentPlotConfigChoice[i] += 1
+          break
+
+
+
   def footer(self):
+
+    if self.PltConfig.showAverage:
+      self.printAverage()
+
     TableFooter = "\\bottomrule\n\end{tabular}\n\end{table}\n\end{document}"
     self.OutputScript.write( TableFooter )
     self.OutputScript.write( "\n_EOF\n" )
@@ -561,19 +632,41 @@ class TableGenerator(AbstractGenerator):
 
   def loop( self, file_idx, plot_idx, last, plotResults):
 
+    if plot_idx == 0:
+      self.avergeIndex = 0
+
     TableLine = ""
 
-    if self.showTitle:
-      if plot_idx == 0:
-        TableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + self.currentTitle + "} & "
-      else:
+    if plot_idx == 0 and self.showTitle:
+      TableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + self.currentTitle + "}" + " & "
+    elif self.PltConfig.showAverage or self.showTitle:
+      TableLine += " & "
+
+    if not self.currentLegend == "":
+      TableLine += self.currentLegend + " & "
+
+    for i in range ( self.numberPoints ):
+      result = []
+
+      for j in range ( len( plotResults ) ):
+        if plotResults[j][prLabel] == self.TableHeaderLabels[i]:
+          result = plotResults[i]
+          break
+
+      if not result == []:
+        TableLine += str(round(float(result[prY]),2))
+        if self.PltConfig.showExtra:
+          TableLine += " (" + result[prYextra] + ")"
         TableLine += " & "
+        if self.PltConfig.showAverage:
+          self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+          if self.PltConfig.showExtra:
+            self.avergeExtraArray[self.avergeIndex] = ( self.avergeExtraArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prYextra]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+          self.avergeArrayCount[self.avergeIndex] += 1
 
-    TableLine += self.currentLegend
+      self.avergeIndex += 1
 
-    for i in range ( len( plotResults ) ):
-      TableLine += " & " + plotResults[i][0]
-
+    TableLine = TableLine[:-3]
     TableLine += "\\\\ \n"
 
     if last:
@@ -582,8 +675,9 @@ class TableGenerator(AbstractGenerator):
     self.OutputScript.write( processLatexText( TableLine ) )
 
 class PlotGenerator(AbstractGenerator):
-  def __init__(self, PltConfig, GnuplotConfig):
-    AbstractGenerator.__init__(self, PltConfig, GnuplotConfig)
+  def __init__(self, PltConfig, Template):
+    AbstractGenerator.__init__(self, PltConfig)
+    self.Template = Template
 
   ###
   ### Plot functions
@@ -602,7 +696,7 @@ class PlotGenerator(AbstractGenerator):
         Label = axis_values[i][1]
         break
 
-    if Label and not self.GnuplotConfig.showBars:
+    if Label and not self.PltConfig.showBars:
       self.OutputScript.write( "set " + axisName + "label '" + Label + "'\n" )
 
   def dumpAxisLimits(self, axis, axisLimit):
@@ -616,9 +710,9 @@ class PlotGenerator(AbstractGenerator):
 
   def header(self):
     # Selected terminal
-    self.selectedGnuplotTerminal = GnuplotTerminals[self.GnuplotConfig.terminalIdx];
+    self.selectedGnuplotTerminal = GnuplotTerminals[self.PltConfig.terminalIdx];
 
-    if self.GnuplotConfig.showBars:
+    if self.PltConfig.showBars:
       print(self.barPlotLabelsCfg)
 
     # Start gnuplot configuration
@@ -633,17 +727,17 @@ class PlotGenerator(AbstractGenerator):
 
     GnuPlotTerminalConfig += " \\"
     self.OutputScript.write( GnuPlotTerminalConfig )
-    self.OutputScript.write( self.GnuplotConfig.GnuPlotTemplate )
-    if self.GnuplotConfig.showBars == True:
-      self.OutputScript.write( self.GnuplotConfig.GnuPlotTemplateBarPlot )
+    self.OutputScript.write( self.Template.GnuPlotTemplate )
+    if self.PltConfig.showBars == True:
+      self.OutputScript.write( self.Template.GnuPlotTemplateBarPlot )
 
     self.dumpAxisLabels("x")
     self.dumpAxisLabels("y")
 
     # Legend configuration
     gnuplotKeyConfiguration = ""
-    if not self.GnuplotConfig.legendPosition == 0:
-      keyPosition = self.GnuplotConfig.legendPosition[self.GnuplotConfig.legendPositionIdx].lower();
+    if not self.PltConfig.legendPosition == 0:
+      keyPosition = self.PltConfig.legendPosition[self.PltConfig.legendPositionIdx].lower();
       gnuplotKeyConfiguration += "set key " + keyPosition
       if "left" in keyPosition:
         gnuplotKeyConfiguration += " Left reverse" # swap label and markers
@@ -653,8 +747,8 @@ class PlotGenerator(AbstractGenerator):
       gnuplotKeyConfiguration += "set key off"
     self.OutputScript.write( gnuplotKeyConfiguration + "\n" )
 
-    self.dumpAxisLimits( "x", self.GnuplotConfig.plotXLim )
-    self.dumpAxisLimits( "y", self.GnuplotConfig.plotYLim )
+    self.dumpAxisLimits( "x", self.PltConfig.plotXLim )
+    self.dumpAxisLimits( "y", self.PltConfig.plotYLim )
 
     self.plotFileNameList = []
 
@@ -680,7 +774,7 @@ class PlotGenerator(AbstractGenerator):
 
   def loop(self, file_idx, plot_idx, last, plotResults):
 
-    if not self.GnuplotConfig.showBars:
+    if not self.PltConfig.showBars:
       plotResults = sorted(plotResults, key=lambda line: float(line[1]))
     # Init gnuplot data point and command
     if plot_idx == 0:
@@ -691,11 +785,11 @@ class PlotGenerator(AbstractGenerator):
       self.plotData.append( line )
     self.plotData.append( ["e"] )
 
-    if self.GnuplotConfig.showBars:
-      self.plotCommand += " '-' using 1:xtic(3) ls " + str( plot_idx + 100 )
+    if self.PltConfig.showBars:
+      self.plotCommand += " '-' using " + str(prY+1) + ":xtic(" + str(prLabel+1) + ") ls " + str( plot_idx + 100 )
       #self.plotCommand += " ti col"
     else:
-      self.plotCommand += " '-' using 2:1 w lp ls " + str( plot_idx + 1 )
+      self.plotCommand += " '-' using " + str(prX+1) + ":" + str(prY+1) + " w lp ls " + str( plot_idx + 1 )
     self.plotCommand += " title '" + self.currentLegend + "',"
 
     if last:
@@ -707,7 +801,7 @@ class PlotGenerator(AbstractGenerator):
 
       self.OutputScript.write( "set output '"  + self.currentFileName + "'\n" )
 
-      if self.GnuplotConfig.showTitle:
+      if self.PltConfig.showTitle:
         self.OutputScript.write( "set title '" + self.currentTitle + "'\n" )
       else:
         self.OutputScript.write( "unset title'\n" )
@@ -726,7 +820,8 @@ class PlotConfiguration(dt.DataSet):
   # Class Initialization
   ############################################################################################
   resultsFile = ResultsFileDefault
-  #resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault )
+  resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault ).set_pos(col=0)
+  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=0).set_pos(col=1)
   plotFile = di.StringItem("Output", default = PlotFileDefault ).set_pos(col=0)
   keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
 
@@ -747,35 +842,42 @@ class PlotConfiguration(dt.DataSet):
     exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(7)" % (i) )
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
-  _bgFig = dt.BeginGroup("").set_pos(col=0)
-  linesPlotCfg = di.MultipleChoiceItem( "Categories for lines", aAvailableCfg, default=[] )
-  pointsPlotCfg = di.MultipleChoiceItem( "Categories for points", aAvailableCfg, default=[] )
-  skipFilterCfg = di.MultipleChoiceItem( "Categories to skip", aAvailableCfg, default=[] )
-  _egFig = dt.EndGroup("")
+  _bdCatG = dt.BeginGroup("Categories").set_pos(col=0)
+  linesPlotCfg = di.MultipleChoiceItem( "Lines", aAvailableCfg, default=[] ).vertical().set_pos(col=0)
+  pointsPlotCfg = di.MultipleChoiceItem( "Points", aAvailableCfg, default=[] ).vertical().set_pos(col=1)
+  skipFilterCfg = di.MultipleChoiceItem( "Skip", aAvailableCfg, default=[] ).vertical().set_pos(col=2)
+  _eCatG = dt.EndGroup("Categories")
+  _bgTabG0 = dt.BeginTabGroup("Tab1").set_pos(col=1)
 
-  _bgAx = dt.BeginGroup("Output definition").set_pos(col=1)
-  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=0)
-  print( AxisValues )
+  _bgOut = dt.BeginGroup("Output definition")
   selectXValues = di.ChoiceItem("X values", AxisValues, default=XValueDefault)
   selectYValues = di.ChoiceItem("Y values", AxisValues, default=YValueDefault)
-  _egAx = dt.EndGroup("Output definition")
+  _egOut = dt.EndGroup("Output definition")
 
-
-
-class GnuplotTemplate(dt.DataSet):
-
-  _bgFig = dt.BeginGroup("Figure definition").set_pos(col=0)
+  _bgFig = dt.BeginGroup("Figure definition")
   legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   terminalIdx = di.ChoiceItem( "Gnuplot terminal", GnuplotTerminals, default=GnuplotTerminalDefault )
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
+  #_bgAx = dt.BeginGroup("Axis definition")
+  plotXLim = di.StringItem("X axis Limits", default=AxisLimitDefaultX )
+  plotYLim = di.StringItem("Y axis Limits", default=AxisLimitDefaultY )
+  #_egAx = dt.EndGroup("Axis definition")
   showTitle = di.BoolItem("Display plot title", default=True ).set_pos(col=0)
   showBars = di.BoolItem("Generate bar plot", default=GenerateBarPlotDefault ).set_pos(col=1)
   _egFig = dt.EndGroup("Figure definition")
 
-  _bgAx = dt.BeginGroup("Axis definition").set_pos(col=1)
-  plotXLim = di.StringItem("X axis Limits", default=AxisLimitDefaultX )
-  plotYLim = di.StringItem("Y axis Limits", default=AxisLimitDefaultY )
-  _egAx = dt.EndGroup("Axis definition")
+  _bgTab = dt.BeginGroup("Table definition")
+  showAverage = di.BoolItem("Show average values", default=True )
+  showExtra = di.BoolItem("Extra Result", default=False ).set_pos(col=0)
+  selectExtraYValues = di.ChoiceItem("Extra values", AxisValues, default=-1).set_pos(col=0)
+  _eTab = dt.EndGroup("Table definition")
+
+
+  _eTabG0 = dt.EndTabGroup("Tab1")
+
+
+
+class Templates(dt.DataSet):
 
   _bgM = BeginGroup("Main gnuplot code").set_pos(col=0)
   GnuPlotTemplate = di.TextItem("", GnuPlotTemplateDefault + GnuPlotTemplateExtra )
@@ -783,13 +885,10 @@ class GnuplotTemplate(dt.DataSet):
   _bgBar = BeginGroup("Bar plot extra code").set_pos(col=1)
   GnuPlotTemplateBarPlot = di.TextItem("", GnuPlotTemplateBarPlotDefault + GnuPlotTemplateBarPlotExtra )
   _egBar = EndGroup("Bar plot extra code")
-
-
-class LatexTemplate(dt.DataSet):
-
-  _bgM = BeginGroup("Main latex code").set_pos(col=0)
+  _bgT = BeginGroup("Main latex code").set_pos(col=0)
   LatexTemplate = di.TextItem("", LatexTemplateDefault)
-  _egM = EndGroup("Main latex code")
+  _egT = EndGroup("Main latex code")
+
 
 
 if __name__ == '__main__':
@@ -800,19 +899,18 @@ if __name__ == '__main__':
   _app = guidata.qapplication()
 
   config = PlotConfiguration("Plot Configutaion")
-  gnuplot = GnuplotTemplate("Gnuplot Template")
-  latex = LatexTemplate("LaTeX Template")
+  templates = Templates("Templates")
 
-  g = dt.DataSetGroup( [config, gnuplot, latex], title='Python Publication ready outputs' )
+  g = dt.DataSetGroup( [config, templates], title='Python Publication ready outputs' )
   while (1):
     if g.edit():
 
       generator = []
       if config.selectedOutput == 0:
-        generator = PlotGenerator(config, gnuplot)
+        generator = PlotGenerator(config, templates)
 
       elif config.selectedOutput == 1:
-        generator = TableGenerator(config, latex)
+        generator = TableGenerator(config, templates)
       else:
         continue
       generator.generateOutput()

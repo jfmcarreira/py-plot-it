@@ -113,30 +113,17 @@ def processLabel(label):
   return label
 
 ############################################################################################
-# Read configuration
-############################################################################################
-ConfigFileName = "cfgData.py"
-exec(open(ConfigFileName).read())
-
-############################################################################################
 # Default values
 ############################################################################################
-
-GnuplotTerminals = ["eps", "pdf"]
-
-if not 'ConfigVersion' in globals():
-  ConfigVersion = 1
-
-if not 'ConfigMapping' in globals():
-  ConfigMapping = []
-
-if not 'LatexTemplateDefault' in globals():
-  LatexTemplateDefault = """
+TypeDefault = 1
+ConfigVersion = 1
+ConfigMapping = []
+LatexTemplateDefault = """
 
 """
+GnuplotTerminals = ["eps", "pdf"]
 
-if not 'GnuPlotTemplateDefault' in globals():
-  GnuPlotTemplateDefault = """
+GnuPlotTemplateDefault = """
 font 'TimesNewRoman,14'
 
 set datafile missing '-'
@@ -170,8 +157,7 @@ set style line 103 lc 3 lw 3
 
 """
 
-if not 'GnuPlotTemplateBarPlotDefault' in globals():
-  GnuPlotTemplateBarPlotDefault = """
+GnuPlotTemplateBarPlotDefault = """
 set style histogram clustered  gap 2
 set grid y
 set style data histograms
@@ -183,54 +169,42 @@ set bmargin 5
 
 """
 
-if not 'GnuPlotTemplateExtra' in globals():
-  GnuPlotTemplateExtra = """
+GnuPlotTemplateExtra = """
 # Extra template
 """
 
-if not 'GnuPlotTemplateBarPlotExtra' in globals():
-  GnuPlotTemplateBarPlotExtra = """
+GnuPlotTemplateBarPlotExtra = """
 # Extra template
 """
 
+FilterNonExistent = 0
+ResultsFileDefault = ""
+PlotFileDefault = ""
+KeepPlotFileDefault = 0
+PlotLegendDefault = 0
+AxisLimitDefaultX = ""
+AxisLimitDefaultY = ""
 
-if not 'FilterNonExistent' in globals():
-  FilterNonExistent = 0
-if not 'ResultsFileDefault' in globals():
-  ResultsFileDefault = ""
-if not 'PlotFileDefault' in globals():
-  PlotFileDefault = ""
-if not 'KeepPlotFileDefault' in globals():
-  KeepPlotFileDefault = 0
-if not 'PlotLegendDefault' in globals():
-  PlotLegendDefault = 0
-if not 'AxisLimitDefaultX' in globals():
-  AxisLimitDefaultX = ""
-if not 'AxisLimitDefaultY' in globals():
-  AxisLimitDefaultY = ""
+XValues = []
+YValues = []
+AxisValues = []
 
-if not 'XValues' in globals():
-  XValues = []
-if not 'YValues' in globals():
-  YValues = []
-if not 'AxisValues' in globals():
-  AxisValues = []
+XValueDefault = 0
+YValueDefault = 0
+
+GenerateBarPlotDefault = 0
+GnuplotTerminalDefault = "eps"
+
+############################################################################################
+# Read configuration
+############################################################################################
+ConfigFileName = "cfgData.py"
+exec(open(ConfigFileName).read())
 
 for i in  XValues:
   AxisValues.append( i )
 for i in YValues:
   AxisValues.append( i )
-
-if not 'XValueDefault' in globals():
-  XValueDefault = 0
-if not 'YValueDefault' in globals():
-  YValueDefault = 0
-
-if not 'GenerateBarPlotDefault' in globals():
-  GenerateBarPlotDefault = 0
-
-if not 'GnuplotTerminalDefault' in globals():
-  GnuplotTerminalDefault = "eps"
 
 ############################################################################################
 # Read data file
@@ -509,6 +483,10 @@ def processLatexText(label):
   label = label.replace( "%", "\%")
   return label
 
+def formatTableNumber(value):
+  value = float(value)
+  return str("%.2f" % ( value ) )
+
 class TableGenerator(AbstractGenerator):
   def __init__(self, PltConfig, Template):
     AbstractGenerator.__init__(self, PltConfig)
@@ -569,12 +547,12 @@ class TableGenerator(AbstractGenerator):
     self.OutputScript.write( LatexHeader + "\n" + processLatexText( TableHeader ) + "\n" )
 
     if self.PltConfig.showAverage:
-      self.avergeArray = [ float(0) for i in range( self.numberPoints * self.numberPlots )]
-      self.avergeArrayCount = self.avergeArray
+      self.avergeArray = [ float(0) for i in range( self.numberPoints * self.numberLines )]
+      self.avergeArrayCount = [ float(0) for i in range( self.numberPoints * self.numberLines )]
     self.avergeIndex = 0
 
     if self.PltConfig.showExtra:
-      self.avergeExtraArray = self.avergeArray
+      self.avergeExtraArray = [ float(0) for i in range( self.numberPoints * self.numberLines )]
 
   def printAverage(self):
 
@@ -598,9 +576,9 @@ class TableGenerator(AbstractGenerator):
         TableLine += self.currentLegend + " & "
 
       for i in range ( self.numberPoints ):
-        TableLine += str(round( self.avergeArray[self.avergeIndex], 2 ))
+        TableLine += formatTableNumber( self.avergeArray[self.avergeIndex] )
         if self.PltConfig.showExtra:
-          TableLine += " (" + str(round( self.avergeExtraArray[self.avergeIndex], 2)) + ")"
+          TableLine += " (" + formatTableNumber( self.avergeExtraArray[self.avergeIndex] ) + ")"
         TableLine += " & "
         self.avergeIndex += 1
 
@@ -654,9 +632,9 @@ class TableGenerator(AbstractGenerator):
           break
 
       if not result == []:
-        TableLine += str(round(float(result[prY]),2))
+        TableLine += formatTableNumber( result[prY] )
         if self.PltConfig.showExtra:
-          TableLine += " (" + result[prYextra] + ")"
+          TableLine += " (" + formatTableNumber( result[prYextra] ) + ")"
         TableLine += " & "
         if self.PltConfig.showAverage:
           self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
@@ -821,7 +799,7 @@ class PlotConfiguration(dt.DataSet):
   ############################################################################################
   resultsFile = ResultsFileDefault
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault ).set_pos(col=0)
-  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=0).set_pos(col=1)
+  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=TypeDefault).set_pos(col=1)
   plotFile = di.StringItem("Output", default = PlotFileDefault ).set_pos(col=0)
   keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
 

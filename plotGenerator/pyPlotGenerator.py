@@ -115,7 +115,7 @@ def processLabel(label):
 ############################################################################################
 # Default values
 ############################################################################################
-TypeDefault = 1
+TypeDefault = 0
 ConfigVersion = 1
 ConfigMapping = []
 LatexTemplateDefault = """
@@ -817,7 +817,7 @@ class PlotConfiguration(dt.DataSet):
       displayList = cfg.configs
     if cfg.selectAll == 1:
       defaults=[ i for i in range(len(cfg.configs)) ]
-    exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(7)" % (i) )
+    exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(6)" % (i) )
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
   _bdCatG = dt.BeginGroup("Categories").set_pos(col=0)

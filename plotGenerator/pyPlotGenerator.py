@@ -3,28 +3,25 @@
 ############################################################################################
 # Imports
 ############################################################################################
-import os, sys
-import guidata
-import tempfile
+import os, sys, tempfile, imp
 import os.path
+from operator import itemgetter, attrgetter
 import signal
-import imp
-from operator import itemgetter
-from guidata.qt.QtGui import QMainWindow, QSplitter
-from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
-from guidata.dataset.datatypes import (DataSet, BeginGroup, EndGroup,
-                                       BeginTabGroup, EndTabGroup)
-from guidata.dataset.dataitems import (ChoiceItem, FloatItem, StringItem,
-                                       DirectoryItem, FileOpenItem, MultipleChoiceItem)
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+import guidata
+from guidata.qt.QtGui import QApplication, QMainWindow, QSplitter
+from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
+from guidata.dataset.datatypes import DataSet, BeginGroup, EndGroup, BeginTabGroup, EndTabGroup
+from guidata.dataset.dataitems import ChoiceItem, FloatItem, StringItem, DirectoryItem, FileOpenItem, MultipleChoiceItem
 from guidata.configtools import get_icon
 from guidata.qthelpers import create_action, add_actions, get_std_icon
 from guidata.dataset.qtwidgets import DataSetEditLayout, DataSetShowLayout
 from guidata.dataset.qtitemwidgets import DataSetWidget
 import guidata.dataset.datatypes as dt
 import guidata.dataset.dataitems as di
-from operator import itemgetter, attrgetter
-signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+from PyQt5.QtWidgets import QApplication, QLabel
 
 
 ############################################################################################
@@ -868,13 +865,11 @@ class Templates(dt.DataSet):
   _egT = EndGroup("Main latex code")
 
 
-
 if __name__ == '__main__':
 
   from guidata.qt.QtGui import QApplication
-
-  # Create QApplication
-  _app = guidata.qapplication()
+  #Create QApplication
+  _app = QApplication(sys.argv)
 
   config = PlotConfiguration("Plot Configutaion")
   templates = Templates("Templates")
@@ -894,8 +889,6 @@ if __name__ == '__main__':
       generator.generateOutput()
     else:
       break;
-
-
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;
 

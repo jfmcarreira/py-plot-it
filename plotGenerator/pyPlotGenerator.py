@@ -659,16 +659,16 @@ class PlotGenerator(AbstractGenerator):
   ###
   def dumpAxisLabels(self, axisName):
     if axisName == "x":
-      axis_values = AxisValues
+      selectedAxis = self.PltConfig.selectXValues
     elif axisName == "y":
-      axis_values = AxisValues
+      selectedAxis = self.PltConfig.selectYValues
     else:
       return
 
     Label = []
-    for i in range( len( axis_values )):
-      if axis_values[i][0] == self.PltConfig.selectXValues:
-        Label = axis_values[i][1]
+    for i in range( len( AxisValues )):
+      if AxisValues[i][0] == selectedAxis:
+        Label = AxisValues[i][1]
         break
 
     if Label and not self.PltConfig.showBars:
@@ -822,13 +822,14 @@ class PlotConfiguration(dt.DataSet):
   pointsPlotCfg = di.MultipleChoiceItem( "Points", aAvailableCfg, default=[] ).vertical().set_pos(col=1)
   skipFilterCfg = di.MultipleChoiceItem( "Skip", aAvailableCfg, default=[] ).vertical().set_pos(col=2)
   _eCatG = dt.EndGroup("Categories")
-  _bgTabG0 = dt.BeginTabGroup("Tab1").set_pos(col=1)
 
-  _bgOut = dt.BeginGroup("Output definition")
+  _bgOut = dt.BeginGroup("Output definition").set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", AxisValues, default=XValueDefault)
   selectYValues = di.ChoiceItem("Y values", AxisValues, default=YValueDefault)
   _egOut = dt.EndGroup("Output definition")
 
+
+  _bgTabG0 = dt.BeginTabGroup("Tab1").set_pos(col=2)
   _bgFig = dt.BeginGroup("Figure definition")
   legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   terminalIdx = di.ChoiceItem( "Gnuplot terminal", GnuplotTerminals, default=GnuplotTerminalDefault )
@@ -846,8 +847,6 @@ class PlotConfiguration(dt.DataSet):
   showExtra = di.BoolItem("Extra Result", default=False ).set_pos(col=0)
   selectExtraYValues = di.ChoiceItem("Extra values", AxisValues, default=-1).set_pos(col=0)
   _eTab = dt.EndGroup("Table definition")
-
-
   _eTabG0 = dt.EndTabGroup("Tab1")
 
 

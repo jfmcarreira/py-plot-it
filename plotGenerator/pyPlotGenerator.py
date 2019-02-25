@@ -7,6 +7,8 @@ import os, sys, tempfile, imp
 import os.path
 from operator import itemgetter, attrgetter
 import signal
+import numpy
+import math
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 import guidata
@@ -106,7 +108,7 @@ def readResults(fname):
 def processLabel(label):
   if label != "":
     label = label[:-3]
-    label = label.replace('_', '\_')
+    label = label.replace('_', '\\_')
   return label
 
 ############################################################################################
@@ -188,6 +190,7 @@ AxisValues = []
 
 XValueDefault = 0
 YValueDefault = 0
+YValueValueExtraDefault = -1
 
 GenerateBarPlotDefault = 0
 GnuplotTerminalDefault = "eps"
@@ -250,7 +253,6 @@ elif ConfigVersion == 3:
       currConfig.configs.append( currConfig.details[j][0] )
       currConfig.name.append( currConfig.details[j][1] )
     Configs.append( currConfig )
-
 
 
 
@@ -489,6 +491,68 @@ class TableGenerator(AbstractGenerator):
     AbstractGenerator.__init__(self, PltConfig)
     self.Template = Template
 
+  # BJONTEGAARD    Bjontegaard metric calculation34
+  def measureBdRatefct(self, reference, processed):
+    """
+    BJONTEGAARD    Bjontegaard metric calculation
+    Bjontegaard's metric allows to compute the average % saving in bitrate
+    between two rate-distortion curves [1].
+    R1,Q1 - RD points for curve 1
+    R2,Q2 - RD points for curve 2
+    adapted from code from: (c) 2010 Giuseppe Valenzise
+    """
+    # numpy plays games with its exported functions.
+    # pylint: disable=no-member
+    # pylint: disable=too-many-locals
+    # pylint: disable=bad-builtin
+    R1 = [float(x[1]) for x in reference]
+    Q1 = [float(x[0]) for x in reference]
+    R2 = [float(x[1]) for x in processed]
+    Q2 = [float(x[0]) for x in processed]
+
+    print(R1)
+    print(Q1)
+    print(R2)
+    print(Q2)
+
+    log_R1 = map(math.log, R1)
+    log_R2 = map(math.log, R2)
+
+    log_R1 = numpy.log(R1)
+    log_R2 = numpy.log(R2)
+
+    print(log_R1)
+    print(log_R2)
+
+    # Best cubic poly fit for graph represented by log_ratex, psrn_x.
+    poly1 = numpy.polyfit(Q1, log_R1, 3)
+    poly2 = numpy.polyfit(Q2, log_R2, 3)
+
+    # Integration interval.
+    min_int = max([min(Q1), min(Q2)])
+    max_int = min([max(Q1), max(Q2)])
+
+    # find integral
+    p_int1 = numpy.polyint(poly1)
+    p_int2 = numpy.polyint(poly2)
+
+    # Calculate the integrated value over the interval we care about.
+    int1 = numpy.polyval(p_int1, max_int) - numpy.polyval(p_int1, min_int)
+    int2 = numpy.polyval(p_int2, max_int) - numpy.polyval(p_int2, min_int)
+
+    # Calculate the average improvement.
+    avg_exp_diff = (int2 - int1) / (max_int - min_int)
+
+    # In really bad formed data the exponent can grow too large.
+    # clamp it.
+    if avg_exp_diff > 200:
+      avg_exp_diff = 200
+
+    # Convert to a percentage.
+    avg_diff = (math.exp(avg_exp_diff) - 1) * 100
+
+    return avg_diff
+
   def header(self):
     self.OutputScript.write( "pdflatex -halt-on-error << _EOF\n" )
     LatexHeader = """\documentclass{article}
@@ -536,6 +600,10 @@ class TableGenerator(AbstractGenerator):
       LatexHeader += "c"
       TableHeader += plotResults[i][prLabel][1:-1] + " & "
       self.TableHeaderLabels.append( plotResults[i][prLabel] )
+
+    if self.PltConfig.measureBDRate:
+      LatexHeader += "c"
+      TableHeader += "BD-RATE & "
 
     TableHeader = TableHeader[:-3]
     LatexHeader += "}"
@@ -613,13 +681,14 @@ class TableGenerator(AbstractGenerator):
     TableLine = ""
 
     if plot_idx == 0 and self.showTitle:
-      TableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + self.currentTitle + "}" + " & "
+      TableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + processLabel(self.currentTitle) + "}" + " & "
     elif self.PltConfig.showAverage or self.showTitle:
       TableLine += " & "
 
     if not self.currentLegend == "":
       TableLine += self.currentLegend + " & "
 
+    resultsArray =  []
     for i in range ( self.numberPoints ):
       result = []
 
@@ -632,14 +701,25 @@ class TableGenerator(AbstractGenerator):
         TableLine += formatTableNumber( result[prY] )
         if self.PltConfig.showExtra:
           TableLine += " (" + formatTableNumber( result[prYextra] ) + ")"
-        TableLine += " & "
+        #TableLine += " & "
         if self.PltConfig.showAverage:
           self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
           if self.PltConfig.showExtra:
             self.avergeExtraArray[self.avergeIndex] = ( self.avergeExtraArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prYextra]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
           self.avergeArrayCount[self.avergeIndex] += 1
 
+        if self.PltConfig.measureBDRate:
+          resultsArray.append( [ result[prY], result[prYextra] ] )
+
       self.avergeIndex += 1
+      TableLine += " & "
+
+    if plot_idx == 0:
+      self.bdReference = resultsArray
+
+    if self.PltConfig.measureBDRate:
+      bdrate = self.measureBdRatefct(self.bdReference, resultsArray )
+      TableLine += formatTableNumber( bdrate ) + " & "
 
     TableLine = TableLine[:-3]
     TableLine += "\\\\ \n"
@@ -777,7 +857,7 @@ class PlotGenerator(AbstractGenerator):
       self.OutputScript.write( "set output '"  + self.currentFileName + "'\n" )
 
       if self.PltConfig.showTitle:
-        self.OutputScript.write( "set title '" + self.currentTitle + "'\n" )
+        self.OutputScript.write( "set title '" + processLabel( self.currentTitle ) + "'\n" )
       else:
         self.OutputScript.write( "unset title'\n" )
 
@@ -844,8 +924,9 @@ class PlotConfiguration(dt.DataSet):
 
   _bgTab = dt.BeginGroup("Table definition")
   showAverage = di.BoolItem("Show average values", default=True )
+  measureBDRate = di.BoolItem("Measure BD-Rate", default=False )
   showExtra = di.BoolItem("Extra Result", default=False ).set_pos(col=0)
-  selectExtraYValues = di.ChoiceItem("Extra values", AxisValues, default=-1).set_pos(col=0)
+  selectExtraYValues = di.ChoiceItem("Extra values", AxisValues, default=YValueValueExtraDefault).set_pos(col=0)
   _eTab = dt.EndGroup("Table definition")
   _eTabG0 = dt.EndTabGroup("Tab1")
 
@@ -890,4 +971,3 @@ if __name__ == '__main__':
       break;
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;
-

@@ -282,6 +282,9 @@ class AbstractGenerator:
         curr_point = filterResults( curr_point, self.pointConfig[i].tab, self.pointConfig[i].configs[curr_idx] )
         barLabel += self.pointConfig[i].name[curr_idx] + " - "
 
+      if not barLabel == "":
+        barLabel = barLabel[:-3]
+
       if not curr_point == []:
         curr_point = curr_point[0] # Discard remaining results
         # TODO: Add average
@@ -424,7 +427,7 @@ class AbstractGenerator:
           curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
           self.currentLegend += self.plotConfig[i].name[curr_idx] + " - "
 
-        self.currentLegend = processLabel(self.currentLegend)
+        self.currentLegend = processLabel(self.currentLegend[:-3])
 
         plotResults = self.getData( currentFileConfigChoice, currentPlotConfigChoice )
 

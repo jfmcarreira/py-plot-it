@@ -99,11 +99,11 @@ class TableGenerator(AbstractGenerator):
     TitleHeader = ""
     for i in range( len( self.fileConfig ) ):
       if len( self.fileConfigChoice[i] ) > 1:
-        TitleHeader += self.fileConfig[i].title + " / "
+        TitleHeader += self.fileConfig[i].title + " - "
 
     if not TitleHeader == "":
       LatexHeader += "l"
-      TableHeader += replaceLabelChars( TitleHeader ) + " & "
+      TableHeader += replaceLabelChars( TitleHeader[:-3] ) + " & "
       self.showTitle = True
     elif self.PltConfig.showAverage:
       LatexHeader += "l"
@@ -111,11 +111,11 @@ class TableGenerator(AbstractGenerator):
 
     LegendHeader = ""
     for cfg in self.plotConfig:
-      LegendHeader += cfg.title + " / "
+      LegendHeader += cfg.title + " - "
 
     if not LegendHeader == "":
       LatexHeader += "l"
-      TableHeader += replaceLabelChars( LegendHeader ) + " & "
+      TableHeader += replaceLabelChars( LegendHeader[:-3] ) + " & "
 
 
     #print( "Generation %d plots with %d lines and %d points!" % (self.numberPlots, self.numberLines, self.numberPoints) )
@@ -160,7 +160,7 @@ class TableGenerator(AbstractGenerator):
       for i in range( len( self.plotConfig )):
         curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
         self.currentLegend += self.plotConfig[i].name[curr_idx] + " - "
-      self.currentLegend = processLabel(self.currentLegend)
+      self.currentLegend = processLabel(self.currentLegend[:-3])
 
       if not self.currentLegend == "":
         TableLine += self.currentLegend + " & "
@@ -174,7 +174,7 @@ class TableGenerator(AbstractGenerator):
 
       TableLine = TableLine[:-3]
       TableLine += "\\\\ \n"
-      self.OutputScript.write( replaceLabelChars( TableLine ) )
+      self.OutputScript.write( processLatexText( TableLine ) )
 
       ## LOOP
       for i in reversed(range( len( self.plotConfig ))):

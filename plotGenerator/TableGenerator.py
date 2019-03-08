@@ -198,7 +198,7 @@ class TableGenerator(AbstractGenerator):
     self.OutputScript.write( "rm texput.aux texput.log \n" )
 
 
-  def loop( self, file_idx, plot_idx, last, plotResults):
+  def loop( self, file_idx, plot_idx, plotResults):
 
     if plot_idx == 0:
       self.avergeIndex = 0
@@ -249,9 +249,10 @@ class TableGenerator(AbstractGenerator):
     TableLine = TableLine[:-3]
     TableLine += "\\\\ \n"
 
-    if last:
-      TableLine += "\midrule \n"
+    self.OutputScript.write( processLatexText( TableLine ) )
 
+  def last(self):
+    TableLine = "\midrule \n"
     self.OutputScript.write( processLatexText( TableLine ) )
 
 

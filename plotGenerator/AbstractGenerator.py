@@ -433,7 +433,10 @@ class AbstractGenerator:
           print("No data to plot! skipping...")
         else:
           print( plotResults )
-          self.loop( file_idx, plot_idx, last, plotResults)
+          self.loop( file_idx, plot_idx, plotResults)
+
+        if last:
+          self.last()
 
         ## setup variables for the next line within the same plot
         ## try to increment the last config! if not possible

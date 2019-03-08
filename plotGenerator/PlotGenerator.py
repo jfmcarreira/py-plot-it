@@ -100,7 +100,7 @@ class PlotGenerator(AbstractGenerator):
       self.OutputScript.write( convert_cmd + " $CONV_FILENAMES \n")
       self.OutputScript.write( "rm ${CONV_FILENAMES} \n" )
 
-  def loop(self, file_idx, plot_idx, last, plotResults):
+  def loop(self, file_idx, plot_idx, plotResults):
 
     if not self.PltConfig.showBars:
       plotResults = sorted(plotResults, key=lambda line: float(line[1]))
@@ -120,26 +120,46 @@ class PlotGenerator(AbstractGenerator):
       self.plotCommand += " '-' using " + str(prX+1) + ":" + str(prY+1) + " w lp ls " + str( plot_idx + 1 )
     self.plotCommand += " title '" + self.currentLegend + "',"
 
-    if last:
-      self.plotFileNameList.append( self.currentFileName ) # keep a list of files to convert
-      if self.selectedGnuplotTerminal == "eps":
-        self.currentFileName += ".eps"
-      elif self.selectedGnuplotTerminal == "pdf":
-        self.currentFileName += ".pdf"
+    #if last:
+      #self.plotFileNameList.append( self.currentFileName ) # keep a list of files to convert
+      #if self.selectedGnuplotTerminal == "eps":
+        #self.currentFileName += ".eps"
+      #elif self.selectedGnuplotTerminal == "pdf":
+        #self.currentFileName += ".pdf"
 
-      self.OutputScript.write( "set output '"  + self.currentFileName + "'\n" )
+      #self.OutputScript.write( "set output '"  + self.currentFileName + "'\n" )
 
-      if self.PltConfig.showTitle:
-        self.OutputScript.write( "set title '" + processLabel( self.currentTitle ) + "'\n" )
-      else:
-        self.OutputScript.write( "unset title'\n" )
+      #if self.PltConfig.showTitle:
+        #self.OutputScript.write( "set title '" + processLabel( self.currentTitle ) + "'\n" )
+      #else:
+        #self.OutputScript.write( "unset title'\n" )
 
-      self.OutputScript.write( self.plotCommand[:-1] + "\n" )
-      for line in self.plotData:
-        for item in line:
-          self.OutputScript.write( "%s " % (item) )
-        self.OutputScript.write( "\n")
+      #self.OutputScript.write( self.plotCommand[:-1] + "\n" )
+      #for line in self.plotData:
+        #for item in line:
+          #self.OutputScript.write( "%s " % (item) )
+        #self.OutputScript.write( "\n")
+      #self.OutputScript.write( "\n")
+
+  def last(self):
+    self.plotFileNameList.append( self.currentFileName ) # keep a list of files to convert
+    if self.selectedGnuplotTerminal == "eps":
+      self.currentFileName += ".eps"
+    elif self.selectedGnuplotTerminal == "pdf":
+      self.currentFileName += ".pdf"
+
+    self.OutputScript.write( "set output '"  + self.currentFileName + "'\n" )
+
+    if self.PltConfig.showTitle:
+      self.OutputScript.write( "set title '" + processLabel( self.currentTitle ) + "'\n" )
+    else:
+      self.OutputScript.write( "unset title'\n" )
+
+    self.OutputScript.write( self.plotCommand[:-1] + "\n" )
+    for line in self.plotData:
+      for item in line:
+        self.OutputScript.write( "%s " % (item) )
       self.OutputScript.write( "\n")
-
+    self.OutputScript.write( "\n")
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;

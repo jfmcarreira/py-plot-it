@@ -79,6 +79,7 @@ class PlotGenerator(AbstractGenerator):
     self.dumpAxisLimits( "y", self.PltConfig.plotYLim )
 
     self.plotFileNameList = []
+    self.plotCommand = ""
 
   def footer(self):
 
@@ -155,11 +156,12 @@ class PlotGenerator(AbstractGenerator):
     else:
       self.OutputScript.write( "unset title'\n" )
 
-    self.OutputScript.write( self.plotCommand[:-1] + "\n" )
-    for line in self.plotData:
-      for item in line:
-        self.OutputScript.write( "%s " % (item) )
+    if not self.plotCommand == "":
+      self.OutputScript.write( self.plotCommand[:-1] + "\n" )
+      for line in self.plotData:
+        for item in line:
+          self.OutputScript.write( "%s " % (item) )
+        self.OutputScript.write( "\n")
       self.OutputScript.write( "\n")
-    self.OutputScript.write( "\n")
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;

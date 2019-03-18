@@ -24,14 +24,17 @@ from PyQt5.QtWidgets import QApplication, QLabel
 
 
 class PlotConfiguration(dt.DataSet):
+
+  def updateOutputType(self, item, value):
+    print("\nitem: ", item, "\nvalue:", value)
+
+
   ############################################################################################
   # Class Initialization
   ############################################################################################
   resultsFile = ResultsFileDefault
   resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault ).set_pos(col=0)
-  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=TypeDefault).set_pos(col=1)
-  plotFile = di.StringItem("Output", default = PlotFileDefault ).set_pos(col=0)
-  keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
+  plotFile = di.StringItem("Output", default = PlotFileDefault ).set_pos(col=1)
 
   aAvailableCfg = []
   for cfg in Configs:
@@ -51,12 +54,14 @@ class PlotConfiguration(dt.DataSet):
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
   _bdCatG = dt.BeginGroup("Categories").set_pos(col=0)
-  linesPlotCfg = di.MultipleChoiceItem( "Lines", aAvailableCfg, default=[] ).vertical().set_pos(col=0)
-  pointsPlotCfg = di.MultipleChoiceItem( "Points", aAvailableCfg, default=[] ).vertical().set_pos(col=1)
-  skipFilterCfg = di.MultipleChoiceItem( "Skip", aAvailableCfg, default=[] ).vertical().set_pos(col=2)
+  linesPlotCfg = di.MultipleChoiceItem( "Lines", aAvailableCfg, default=[] ).vertical(2).set_pos(col=0)
+  pointsPlotCfg = di.MultipleChoiceItem( "Points", aAvailableCfg, default=[] ).vertical(2).set_pos(col=1)
+  skipFilterCfg = di.MultipleChoiceItem( "Skip", aAvailableCfg, default=[] ).vertical(2).set_pos(col=2)
   _eCatG = dt.EndGroup("Categories")
 
   _bgOut = dt.BeginGroup("Output definition").set_pos(col=1)
+  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=TypeDefault).set_pos(col=0).set_prop("display", callback=updateOutputType)
+  keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", AxisValues, default=XValueDefault)
   selectYValues = di.ChoiceItem("Y values", AxisValues, default=YValueDefault)
   _egOut = dt.EndGroup("Output definition")
@@ -68,8 +73,8 @@ class PlotConfiguration(dt.DataSet):
   terminalIdx = di.ChoiceItem( "Gnuplot terminal", GnuplotTerminals, default=GnuplotTerminalDefault )
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
   #_bgAx = dt.BeginGroup("Axis definition")
-  plotXLim = di.StringItem("X axis Limits", default=AxisLimitDefaultX )
-  plotYLim = di.StringItem("Y axis Limits", default=AxisLimitDefaultY )
+  plotXLim = di.StringItem("X axis Limits", default=AxisLimitDefaultX ).set_pos(col=0)
+  plotYLim = di.StringItem("Y axis Limits", default=AxisLimitDefaultY ).set_pos(col=1)
   #_egAx = dt.EndGroup("Axis definition")
   showTitle = di.BoolItem("Display plot title", default=True ).set_pos(col=0)
   showBars = di.BoolItem("Generate bar plot", default=GenerateBarPlotDefault ).set_pos(col=1)

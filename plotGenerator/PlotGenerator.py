@@ -103,12 +103,16 @@ class PlotGenerator(AbstractGenerator):
 
   def loop(self, file_idx, plot_idx, plotResults):
 
-    if not self.PltConfig.showBars:
-      plotResults = sorted(plotResults, key=lambda line: float(line[1]))
-    # Init gnuplot data point and command
     if plot_idx == 0:
       self.plotData = []
       self.plotCommand = "plot"
+
+    if not plotResults:
+      return
+
+    if not self.PltConfig.showBars:
+      plotResults = sorted(plotResults, key=lambda line: float(line[1]))
+    # Init gnuplot data point and command
 
     for line in plotResults:
       self.plotData.append( line )
@@ -156,7 +160,7 @@ class PlotGenerator(AbstractGenerator):
     else:
       self.OutputScript.write( "unset title'\n" )
 
-    if not self.plotCommand == "":
+    if not self.plotCommand == "plot":
       self.OutputScript.write( self.plotCommand[:-1] + "\n" )
       for line in self.plotData:
         for item in line:

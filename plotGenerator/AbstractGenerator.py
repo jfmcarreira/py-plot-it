@@ -21,7 +21,8 @@ class ConfigurationList:
     self.configs = []
     self.details = []
     self.name = []
-    self.tab = 0
+    self.tab = -1
+    self.label = []
     self.values_tab = -1
     self.use_for_plot = 0
     self.selectAll = 0
@@ -54,6 +55,12 @@ def filterSeveralResults( results, col, values):
         break
   return filtResults
 
+def findColumn( line, keyword):
+  for i in range( len( line ) ):
+    if line[i] == keyword:
+      return i
+  return -1
+
 # Returns an array of [ detail, name ]
 def resultsGetDetails( results, col):
   members = []
@@ -85,11 +92,23 @@ def translateMappings( mappings, details):
   return outDetails
 
 def readResults(fname):
+  headerDefined = False
   if os.path.isfile(fname):
     print("Reading results!!")
     for line in open(fname).readlines():
       if not line.startswith("#"):
         ResultsTable.append(line.split())
+      else:
+        if not headerDefined:
+          headerDefined = True
+          ResultsTableHeader = line[1:].split()
+
+def readResultsHeader(fname):
+  if os.path.isfile(fname):
+    print("Finding header!!")
+    for line in open(fname).readlines():
+      if line.startswith("#"):
+        return line[1:].split()
 
 def replaceLabelChars(label):
   label = label.replace('_', '\\_')
@@ -181,6 +200,9 @@ AxisValues = []
 XValueDefault = 0
 YValueDefault = 0
 YValueValueExtraDefault = -1
+BuildAxisValuesAuto = False
+XValueDefaultLabel = ""
+YValueDefaultLabel = ""
 
 GenerateBarPlotDefault = 0
 GnuplotTerminalDefault = "eps"
@@ -191,15 +213,11 @@ GnuplotTerminalDefault = "eps"
 ConfigFileName = "cfgData.py"
 exec(open(ConfigFileName).read())
 
-for i in  XValues:
-  AxisValues.append( i )
-for i in YValues:
-  AxisValues.append( i )
-
 ############################################################################################
 # Read data file
 ############################################################################################
 ResultsTable = []
+ResultsTableHeader = readResultsHeader(ResultsFileDefault)
 readResults(ResultsFileDefault)
 if not ResultsTable:
   FilterNonExistent = 0
@@ -233,18 +251,48 @@ elif ConfigVersion == 2:
 elif ConfigVersion == 3:
   for i in range( len( ConfigsImport ) ):
     currConfig = ConfigsImport[i]
+    if currConfig.tab == -1:
+      currConfig.tab = findColumn( ResultsTableHeader, currConfig.label ) + 1
+      assert( currConfig.tab >= 0)
     currConfig.details = resultsGetDetails( ResultsTable, currConfig.tab)
     currConfig.details = translateMappings( ConfigMapping, currConfig.details )
-
     if currConfig.sort == 1:
       currConfig.details.sort(key=itemgetter(0))
-
     for j in range( len( currConfig.details ) ):
       currConfig.configs.append( currConfig.details[j][0] )
       currConfig.name.append( currConfig.details[j][1] )
     Configs.append( currConfig )
 
+if BuildAxisValuesAuto == True:
+  AxisValues = []
+  for col in range( 1,  len( ResultsTableHeader ) + 1 ):
+    label = ResultsTableHeader[col - 1]
+    if not XValueDefaultLabel == "":
+      if XValueDefaultLabel == label:
+        XValueDefault = col
+    if not YValueDefaultLabel == "":
+      if YValueDefaultLabel == label:
+        YValueDefault = col
+    # Check if it exists in configs
+    for j in range( len( Configs ) ):
+      if Configs[j].tab == col:
+        label = Configs[j].title
+    l = [col, findMap( ConfigMapping, label )]
+    AxisValues.append( tuple( l) )
 
+else:
+  for i in  XValues:
+    AxisValues.append( i )
+  for i in YValues:
+    AxisValues.append( i )
+  for i in range( len( AxisValues ) ):
+    if AxisValues[i][0] == '-':
+      l = list( AxisValues[i] )
+      l[0] = AxisValues[i-1][0] + 1
+      AxisValues[i] = tuple( l )
+
+#for l in AxisValues:
+  #print(l)
 
 ############################################################################################
 # Main classes
@@ -436,7 +484,8 @@ class AbstractGenerator:
           print("No data to plot! skipping...")
         else:
           print( plotResults )
-          self.loop( file_idx, plot_idx, plotResults)
+
+        self.loop( file_idx, plot_idx, plotResults)
 
         if last:
           self.last()

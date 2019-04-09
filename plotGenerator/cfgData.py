@@ -11,6 +11,7 @@ Configs = [ ConfigurationList() for i in range(NumberOfColumns)]
 
 ## Base
 Configs[0].title      = 'Base'
+# Configs[ci].label      = 'BASE' # tab or label
 Configs[0].tab        = 2
 Configs[0].selectAll  = 1
 
@@ -56,6 +57,7 @@ PlotLegendDefault = 3
 ConfigurationSelectAll = 1
 XValueDefault = 7
 YValueDefault = 8
+BuildAxisValuesAuto = 0
 
 GenerateBarPlotDefault = 0
 

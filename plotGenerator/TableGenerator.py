@@ -203,6 +203,7 @@ class TableGenerator(AbstractGenerator):
     if plot_idx == 0:
       self.avergeIndex = 0
 
+    PrintLine = True
     TableLine = ""
 
     if plot_idx == 0 and self.showTitle:
@@ -223,6 +224,7 @@ class TableGenerator(AbstractGenerator):
           break
 
       if not result == []:
+        PrintLine = True
         TableLine += formatTableNumber( result[prY] )
         if self.PltConfig.showExtra:
           TableLine += " (" + formatTableNumber( result[prYextra] ) + ")"
@@ -242,14 +244,19 @@ class TableGenerator(AbstractGenerator):
     if plot_idx == 0:
       self.bdReference = resultsArray
 
+    bdrate = 0
     if self.PltConfig.measureBDRate:
-      bdrate = self.measureBdRatefct(self.bdReference, resultsArray )
-      TableLine += formatTableNumber( bdrate ) + " & "
+      if not resultsArray == []:
+        bdrate = self.measureBdRatefct(self.bdReference, resultsArray )
+      if plot_idx == 0:
+        TableLine += "-- & "
+      else:
+        TableLine += formatTableNumber( bdrate ) + " & "
 
     TableLine = TableLine[:-3]
-    TableLine += "\\\\ \n"
-
-    self.OutputScript.write( processLatexText( TableLine ) )
+    TableLine += " \\\\ \n"
+    if PrintLine:
+      self.OutputScript.write( processLatexText( TableLine ) )
 
   def last(self):
     TableLine = "\midrule \n"

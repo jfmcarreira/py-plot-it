@@ -3,11 +3,6 @@
 ############################################################################################
 # Imports
 ############################################################################################
-from AbstractGenerator import *
-from PlotGenerator import PlotGenerator
-from TableGenerator import TableGenerator
-
-
 import guidata
 from guidata.qt.QtGui import QApplication, QMainWindow, QSplitter
 from guidata.dataset.qtwidgets import DataSetShowGroupBox, DataSetEditGroupBox
@@ -19,8 +14,12 @@ from guidata.dataset.qtwidgets import DataSetEditLayout, DataSetShowLayout
 from guidata.dataset.qtitemwidgets import DataSetWidget
 import guidata.dataset.datatypes as dt
 import guidata.dataset.dataitems as di
-
 from PyQt5.QtWidgets import QApplication, QLabel
+
+from AbstractGenerator import *
+from PlotGenerator import PlotGenerator
+from TableGenerator import TableGenerator
+
 
 
 class PlotConfiguration(dt.DataSet):
@@ -32,10 +31,6 @@ class PlotConfiguration(dt.DataSet):
   ############################################################################################
   # Class Initialization
   ############################################################################################
-  resultsFile = ResultsFileDefault
-  resultsFile = di.FileOpenItem("Results file", default = ResultsFileDefault ).set_pos(col=0)
-  plotFile = di.StringItem("Output", default = PlotFileDefault ).set_pos(col=1)
-
   aAvailableCfg = []
   for cfg in Configs:
     aAvailableCfg.append( cfg.title )
@@ -60,10 +55,12 @@ class PlotConfiguration(dt.DataSet):
   _eCatG = dt.EndGroup("Categories")
 
   _bgOut = dt.BeginGroup("Output definition").set_pos(col=1)
+  plotFile = di.StringItem("Output", default = PlotFileDefault )
   selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=TypeDefault).set_pos(col=0).set_prop("display", callback=updateOutputType)
   keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", AxisValues, default=XValueDefault)
   selectYValues = di.ChoiceItem("Y values", AxisValues, default=YValueDefault)
+  measureBDRate = di.BoolItem("Measure BD-Rate", default=False )
   _egOut = dt.EndGroup("Output definition")
 
 
@@ -82,7 +79,6 @@ class PlotConfiguration(dt.DataSet):
 
   _bgTab = dt.BeginGroup("Table definition")
   showAverage = di.BoolItem("Show average values", default=True )
-  measureBDRate = di.BoolItem("Measure BD-Rate", default=False )
   showExtra = di.BoolItem("Extra Result", default=False ).set_pos(col=0)
   selectExtraYValues = di.ChoiceItem("Extra values", AxisValues, default=YValueValueExtraDefault).set_pos(col=0)
   _eTab = dt.EndGroup("Table definition")
@@ -118,10 +114,10 @@ if __name__ == '__main__':
 
       generator = []
       if config.selectedOutput == 0:
-        generator = PlotGenerator(config, templates)
+        generator = PlotGenerator(Configs, ResultsTable, config, templates)
 
       elif config.selectedOutput == 1:
-        generator = TableGenerator(config, templates)
+        generator = TableGenerator(Configs, ResultsTable, config, templates)
       else:
         continue
       generator.generateOutput()

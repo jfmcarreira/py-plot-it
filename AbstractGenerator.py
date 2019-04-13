@@ -3,32 +3,17 @@
 ############################################################################################
 # Imports
 ############################################################################################
-import os, sys, tempfile, imp
-import os.path
+import os, tempfile
 from operator import itemgetter, attrgetter
 import signal
 import numpy
 import math
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+from MiscFct import *
 
-############################################################################################
-# Configuration list class
-############################################################################################
-class ConfigurationList:
-  def __init__(self):
-    self.title = []
-    self.configs = []
-    self.details = []
-    self.name = []
-    self.tab = -1
-    self.label = []
-    self.values_tab = -1
-    self.use_for_plot = 0
-    self.selectAll = 0
-    self.sort = 0
-    self.showLabels = 1
-
+# This returns several defaults variables
+from Init import *
 
 ## Plot results definition
 prLabel   = 0
@@ -36,271 +21,18 @@ prX       = 1
 prY       = 2
 prYextra  = 3
 
-############################################################################################
-# Auxiliary functions
-############################################################################################
-def filterResults( results, col, value):
-  filtResults = []
-  for line in results:
-    if line[col - 1] == value:
-      filtResults.append(line)
-  return filtResults
+prrBD     = 0
 
-def filterSeveralResults( results, col, values):
-  filtResults = []
-  for line in results:
-    for v in values:
-      if line[col - 1] == v:
-        filtResults.append(line)
-        break
-  return filtResults
-
-def findColumn( line, keyword):
-  for i in range( len( line ) ):
-    if line[i] == keyword:
-      return i
-  return -1
-
-# Returns an array of [ detail, name ]
-def resultsGetDetails( results, col):
-  members = []
-  for line in results:
-    value = line[col - 1]
-    if value not in members:
-      members.append( value )
-
-  outMembers = []
-  for line in members:
-    outMembers.append([line, line])
-  return outMembers
-
-
-# Find name in mappins
-def findMap( mappings, config):
-  name = config
-  for line in mappings:
-    if line[0] == config:
-      name = line[1]
-      return name
-  return name
-
-# Find name in mappins
-def translateMappings( mappings, details):
-  outDetails = []
-  for line in details:
-    outDetails.append( [line[0], findMap( mappings, line[0] )] )
-  return outDetails
-
-def readResults(fname):
-  headerDefined = False
-  if os.path.isfile(fname):
-    print("Reading results!!")
-    for line in open(fname).readlines():
-      if not line.startswith("#"):
-        ResultsTable.append(line.split())
-      else:
-        if not headerDefined:
-          headerDefined = True
-          ResultsTableHeader = line[1:].split()
-
-def readResultsHeader(fname):
-  if os.path.isfile(fname):
-    print("Finding header!!")
-    for line in open(fname).readlines():
-      if line.startswith("#"):
-        return line[1:].split()
-
-def replaceLabelChars(label):
-  label = label.replace('_', '\\_')
-  return label
-
-def processLabel(label):
-  if label != "":
-    #label = label[:-3]
-    label = replaceLabelChars( label )
-  return label
-
-############################################################################################
-# Default values
-############################################################################################
-TypeDefault = 0
-ConfigVersion = 1
-ConfigMapping = []
-LatexTemplateDefault = """
-
-"""
-GnuplotTerminals = ["eps", "pdf"]
-
-GnuPlotTemplateDefault = """
-font 'TimesNewRoman,14'
-
-set datafile missing '-'
-
-set grid
-#set size square {1,.5}
-
-set title center  offset character 0, -.9
-
-set xlabel center
-set ylabel center offset character 1, 0
-
-set key spacing 1 width 0
-
-set style line 4 lc 1 lt  1 lw 2 pt  2 ps 1
-set style line 2 lc 2 lt  2 lw 2 pt  3 ps 1
-set style line 3 lc 3 lt  4 lw 2 pt  4 ps 1
-set style line 1 lc 4 lt  4 lw 2 pt  10 ps 1
-set style line 5 lc 7 lt  3 lw 2 pt  6 ps 1
-set style line 6 lc 8 lt  6 lw 2 pt  8 ps 1
-set style line 7 lc 2 lt  7 lw 2 pt  8 ps 1
-set style line 8 lc 3 lt  8 lw 2 pt  9 ps 1
-set style line 9 lc 4 lt  9 lw 2 pt  10 ps 1
-
-set style line 100 lc 1 lw 3
-set style line 101 lc 4 lw 3
-set style line 102 lc 2 lw 3
-set style line 103 lc 3 lw 3
-
-#set rmargin 1
-
-"""
-
-GnuPlotTemplateBarPlotDefault = """
-set style histogram clustered  gap 2
-set grid y
-set style data histograms
-set style fill solid
-set boxwidth 1
-
-set xtics rotate by 45 right
-set bmargin 5
-
-"""
-
-GnuPlotTemplateExtra = """
-# Extra template
-"""
-
-GnuPlotTemplateBarPlotExtra = """
-# Extra template
-"""
-
-FilterNonExistent = 0
-ResultsFileDefault = ""
-PlotFileDefault = ""
-KeepPlotFileDefault = 0
-PlotLegendDefault = 0
-AxisLimitDefaultX = ""
-AxisLimitDefaultY = ""
-
-XValues = []
-YValues = []
-AxisValues = []
-
-XValueDefault = 0
-YValueDefault = 0
-YValueValueExtraDefault = -1
-BuildAxisValuesAuto = False
-XValueDefaultLabel = ""
-YValueDefaultLabel = ""
-
-GenerateBarPlotDefault = 0
-GnuplotTerminalDefault = "eps"
-
-############################################################################################
-# Read configuration
-############################################################################################
-ConfigFileName = "cfgData.py"
-exec(open(ConfigFileName).read())
-
-############################################################################################
-# Read data file
-############################################################################################
-ResultsTable = []
-ResultsTableHeader = readResultsHeader(ResultsFileDefault)
-readResults(ResultsFileDefault)
-if not ResultsTable:
-  FilterNonExistent = 0
-if FilterNonExistent:
-  print("Filtering results")
-
-# Import configs using two methods
-# either write details or configs + names
-ConfigsImport = Configs
-Configs = []
-if ConfigVersion == 1:
-  for i in range( len( ConfigsImport ) ):
-    currConfig = ConfigsImport[i]
-    for j in range( len( ConfigsImport[i].configs ) ):
-      currConfig.details.append( [ ConfigsImport[i].configs[j], ConfigsImport[i].name[j] ] )
-    Configs.append( currConfig )
-
-elif ConfigVersion == 2:
-  for i in range( len( ConfigsImport ) ):
-    currConfig = ConfigsImport[i]
-    for j in range( len( ConfigsImport[i].details ) ):
-      if FilterNonExistent == 1:
-        currResults = filterResults( ResultsTable, ConfigsImport[i].tab, ConfigsImport[i].details[j][0] )
-      else:
-        currResults = 1
-      if currResults:
-        currConfig.configs.append( ConfigsImport[i].details[j][0] )
-        currConfig.name.append( ConfigsImport[i].details[j][1] )
-    Configs.append( currConfig )
-
-elif ConfigVersion == 3:
-  for i in range( len( ConfigsImport ) ):
-    currConfig = ConfigsImport[i]
-    if currConfig.tab == -1:
-      currConfig.tab = findColumn( ResultsTableHeader, currConfig.label ) + 1
-      assert( currConfig.tab >= 0)
-    currConfig.details = resultsGetDetails( ResultsTable, currConfig.tab)
-    currConfig.details = translateMappings( ConfigMapping, currConfig.details )
-    if currConfig.sort == 1:
-      currConfig.details.sort(key=itemgetter(0))
-    for j in range( len( currConfig.details ) ):
-      currConfig.configs.append( currConfig.details[j][0] )
-      currConfig.name.append( currConfig.details[j][1] )
-    Configs.append( currConfig )
-
-if BuildAxisValuesAuto == True:
-  AxisValues = []
-  for col in range( 1,  len( ResultsTableHeader ) + 1 ):
-    label = ResultsTableHeader[col - 1]
-    if not XValueDefaultLabel == "":
-      if XValueDefaultLabel == label:
-        XValueDefault = col
-    if not YValueDefaultLabel == "":
-      if YValueDefaultLabel == label:
-        YValueDefault = col
-    # Check if it exists in configs
-    for j in range( len( Configs ) ):
-      if Configs[j].tab == col:
-        label = Configs[j].title
-    l = [col, findMap( ConfigMapping, label )]
-    AxisValues.append( tuple( l) )
-
-else:
-  for i in  XValues:
-    AxisValues.append( i )
-  for i in YValues:
-    AxisValues.append( i )
-  for i in range( len( AxisValues ) ):
-    if AxisValues[i][0] == '-':
-      l = list( AxisValues[i] )
-      l[0] = AxisValues[i-1][0] + 1
-      AxisValues[i] = tuple( l )
-
-#for l in AxisValues:
-  #print(l)
 
 ############################################################################################
 # Main classes
 ############################################################################################
 class AbstractGenerator:
 
-  def __init__(self, PltConfig):
+  def __init__(self, Configs, Results, PltConfig):
     self.PltConfig = PltConfig
+    self.OutputResults = Results
+    self.Configs = Configs
 
   def getData(self, currentFileConfigChoice, currentPlotConfigChoice):
 
@@ -363,10 +95,8 @@ class AbstractGenerator:
       print( "Empty output!!" )
       return
 
-    if not ResultsTable:
-      readResults( self.PltConfig.resultsFile )
-
-    self.OutputResults = ResultsTable
+    if self.OutputResults == []:
+      self.OutputResults = readResults( self.PltConfig.resultsFile )
 
     # General cfg variable
     self.aCfgChoice       = []
@@ -388,38 +118,38 @@ class AbstractGenerator:
     self.numberLines = 1
     self.numberPoints = 1
 
-    for i in range( len( Configs )):
+    for i in range( len( self.Configs )):
       exec("self.aCfgChoice.append( self.PltConfig.cfgChoice%d )" % (i) )
       use_for_plot = False
       use_for_points = False
       for j in self.PltConfig.linesPlotCfg:
-        if Configs[i].title == self.PltConfig.aAvailableCfg[j]:
+        if self.Configs[i].title == self.PltConfig.aAvailableCfg[j]:
           use_for_plot = True
           break
 
       for j in self.PltConfig.pointsPlotCfg:
-        if Configs[i].title == self.PltConfig.aAvailableCfg[j]:
+        if self.Configs[i].title == self.PltConfig.aAvailableCfg[j]:
           use_for_points = True
           break
 
       if not use_for_points:
         if use_for_plot == 0:
-          self.fileConfig.append( Configs[i] )
+          self.fileConfig.append( self.Configs[i] )
           self.fileConfigChoice.append( self.aCfgChoice[i] )
           self.numberPlots *= len( self.aCfgChoice[i] )
         else:
           #plotConditions += 1
-          self.plotConfig.append( Configs[i] )
+          self.plotConfig.append( self.Configs[i] )
           self.plotConfigChoice.append( self.aCfgChoice[i] )
           self.numberLines *= len( self.aCfgChoice[i] )
         configList = []
         for j in self.aCfgChoice[i]:
-          configList.append( Configs[i].configs[j] )
-        self.OutputResults = filterSeveralResults( self.OutputResults, Configs[i].tab, configList )
+          configList.append( self.Configs[i].configs[j] )
+        self.OutputResults = filterSeveralResults( self.OutputResults, self.Configs[i].tab, configList )
       else:
-        for label in Configs[i].name:
+        for label in self.Configs[i].name:
           self.barPlotLabelsCfg.append( label )
-        self.pointConfig.append( Configs[i] )
+        self.pointConfig.append( self.Configs[i] )
         self.pointConfigChoice.append( self.aCfgChoice[i] )
         self.numberPoints *= len( self.aCfgChoice[i] )
 
@@ -478,14 +208,26 @@ class AbstractGenerator:
         self.currentLegend = processLabel(self.currentLegend[:-3])
 
         plotResults = self.getData( currentFileConfigChoice, currentPlotConfigChoice )
-
+        extraResults = []
         ## check empty data -> trigger an exception
         if not plotResults:
           print("No data to plot! skipping...")
         else:
           print( plotResults )
 
-        self.loop( file_idx, plot_idx, plotResults)
+        if plot_idx == 0:
+          self.bdReference = plotResults
+
+        Bjontegaard = 0
+        if self.PltConfig.measureBDRate:
+          if plot_idx == 0:
+            Bjontegaard = "--"
+          else:
+            if not plotResults == []:
+              Bjontegaard = self.measureBdRatefct(self.bdReference, plotResults )
+        extraResults.append(Bjontegaard)
+
+        self.loop( file_idx, plot_idx, plotResults, extraResults)
 
         if last:
           self.last()
@@ -522,6 +264,67 @@ class AbstractGenerator:
 
     print("Finished!")
 
+  # BJONTEGAARD    Bjontegaard metric calculation34
+  def measureBdRatefct(self, reference, processed):
+    """
+    BJONTEGAARD    Bjontegaard metric calculation
+    Bjontegaard's metric allows to compute the average % saving in bitrate
+    between two rate-distortion curves [1].
+    R1,Q1 - RD points for curve 1
+    R2,Q2 - RD points for curve 2
+    adapted from code from: (c) 2010 Giuseppe Valenzise
+    """
+    # numpy plays games with its exported functions.
+    # pylint: disable=no-member
+    # pylint: disable=too-many-locals
+    # pylint: disable=bad-builtin
+    R1 = [float(x[prX]) for x in reference]
+    Q1 = [float(x[prY]) for x in reference]
+    R2 = [float(x[prX]) for x in processed]
+    Q2 = [float(x[prY]) for x in processed]
+
+    #print(R1)
+    #print(Q1)
+    #print(R2)
+    #print(Q2)
+
+    log_R1 = map(math.log, R1)
+    log_R2 = map(math.log, R2)
+
+    log_R1 = numpy.log(R1)
+    log_R2 = numpy.log(R2)
+
+    #print(log_R1)
+    #print(log_R2)
+
+    # Best cubic poly fit for graph represented by log_ratex, psrn_x.
+    poly1 = numpy.polyfit(Q1, log_R1, 3)
+    poly2 = numpy.polyfit(Q2, log_R2, 3)
+
+    # Integration interval.
+    min_int = max([min(Q1), min(Q2)])
+    max_int = min([max(Q1), max(Q2)])
+
+    # find integral
+    p_int1 = numpy.polyint(poly1)
+    p_int2 = numpy.polyint(poly2)
+
+    # Calculate the integrated value over the interval we care about.
+    int1 = numpy.polyval(p_int1, max_int) - numpy.polyval(p_int1, min_int)
+    int2 = numpy.polyval(p_int2, max_int) - numpy.polyval(p_int2, min_int)
+
+    # Calculate the average improvement.
+    avg_exp_diff = (int2 - int1) / (max_int - min_int)
+
+    # In really bad formed data the exponent can grow too large.
+    # clamp it.
+    if avg_exp_diff > 200:
+      avg_exp_diff = 200
+
+    # Convert to a percentage.
+    avg_diff = (math.exp(avg_exp_diff) - 1) * 100
+
+    return avg_diff
 
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;

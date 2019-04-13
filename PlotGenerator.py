@@ -3,8 +3,8 @@
 from AbstractGenerator import *
 
 class PlotGenerator(AbstractGenerator):
-  def __init__(self, PltConfig, Template):
-    AbstractGenerator.__init__(self, PltConfig)
+  def __init__(self, Configs, Results, PltConfig, Template):
+    AbstractGenerator.__init__(self, Configs, Results, PltConfig)
     self.Template = Template
 
   ###
@@ -64,13 +64,16 @@ class PlotGenerator(AbstractGenerator):
 
     # Legend configuration
     gnuplotKeyConfiguration = ""
+    self.keyPosition = 0
     if not self.PltConfig.legendPosition == 0:
       keyPosition = self.PltConfig.legendPosition[self.PltConfig.legendPositionIdx].lower();
       gnuplotKeyConfiguration += "set key " + keyPosition
       if "left" in keyPosition:
         gnuplotKeyConfiguration += " Left reverse" # swap label and markers
+        self.keyPosition = 0
       else:
         gnuplotKeyConfiguration += " Right" # swap label and markers
+        self.keyPosition = 1
     else:
       gnuplotKeyConfiguration += "set key off"
     self.OutputScript.write( gnuplotKeyConfiguration + "\n" )
@@ -101,7 +104,7 @@ class PlotGenerator(AbstractGenerator):
       self.OutputScript.write( convert_cmd + " $CONV_FILENAMES \n")
       self.OutputScript.write( "rm ${CONV_FILENAMES} \n" )
 
-  def loop(self, file_idx, plot_idx, plotResults):
+  def loop(self, file_idx, plot_idx, plotResults, extraResults):
 
     if plot_idx == 0:
       self.plotData = []
@@ -109,6 +112,18 @@ class PlotGenerator(AbstractGenerator):
 
     if not plotResults:
       return
+
+    extraLegendInfo = ""
+    if self.PltConfig.measureBDRate:
+      extraLegendInfo = formatNumber( extraResults[prrBD] )
+    extraLegendInfo += " | "
+    extraLegendInfo = extraLegendInfo[:-3]
+
+    if not extraLegendInfo == "":
+      if self.keyPosition == 0:
+        self.currentLegend = "(" + extraLegendInfo + ") " + self.currentLegend
+      else:
+        self.currentLegend = self.currentLegend + " (" + extraLegendInfo + ")"
 
     if not self.PltConfig.showBars:
       plotResults = sorted(plotResults, key=lambda line: float(line[1]))

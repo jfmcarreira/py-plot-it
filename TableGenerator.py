@@ -7,76 +7,15 @@ def processLatexText(label):
   label = label.replace( "%", "\%")
   return label
 
+
 def formatTableNumber(value):
-  value = float(value)
-  return str("%.2f" % ( value ) )
+  return formatNumber( value )
+
 
 class TableGenerator(AbstractGenerator):
-  def __init__(self, PltConfig, Template):
-    AbstractGenerator.__init__(self, PltConfig)
+  def __init__(self, Configs, Results, PltConfig, Template):
+    AbstractGenerator.__init__(self, Configs, Results, PltConfig)
     self.Template = Template
-
-  # BJONTEGAARD    Bjontegaard metric calculation34
-  def measureBdRatefct(self, reference, processed):
-    """
-    BJONTEGAARD    Bjontegaard metric calculation
-    Bjontegaard's metric allows to compute the average % saving in bitrate
-    between two rate-distortion curves [1].
-    R1,Q1 - RD points for curve 1
-    R2,Q2 - RD points for curve 2
-    adapted from code from: (c) 2010 Giuseppe Valenzise
-    """
-    # numpy plays games with its exported functions.
-    # pylint: disable=no-member
-    # pylint: disable=too-many-locals
-    # pylint: disable=bad-builtin
-    R1 = [float(x[1]) for x in reference]
-    Q1 = [float(x[0]) for x in reference]
-    R2 = [float(x[1]) for x in processed]
-    Q2 = [float(x[0]) for x in processed]
-
-    print(R1)
-    print(Q1)
-    print(R2)
-    print(Q2)
-
-    log_R1 = map(math.log, R1)
-    log_R2 = map(math.log, R2)
-
-    log_R1 = numpy.log(R1)
-    log_R2 = numpy.log(R2)
-
-    print(log_R1)
-    print(log_R2)
-
-    # Best cubic poly fit for graph represented by log_ratex, psrn_x.
-    poly1 = numpy.polyfit(Q1, log_R1, 3)
-    poly2 = numpy.polyfit(Q2, log_R2, 3)
-
-    # Integration interval.
-    min_int = max([min(Q1), min(Q2)])
-    max_int = min([max(Q1), max(Q2)])
-
-    # find integral
-    p_int1 = numpy.polyint(poly1)
-    p_int2 = numpy.polyint(poly2)
-
-    # Calculate the integrated value over the interval we care about.
-    int1 = numpy.polyval(p_int1, max_int) - numpy.polyval(p_int1, min_int)
-    int2 = numpy.polyval(p_int2, max_int) - numpy.polyval(p_int2, min_int)
-
-    # Calculate the average improvement.
-    avg_exp_diff = (int2 - int1) / (max_int - min_int)
-
-    # In really bad formed data the exponent can grow too large.
-    # clamp it.
-    if avg_exp_diff > 200:
-      avg_exp_diff = 200
-
-    # Convert to a percentage.
-    avg_diff = (math.exp(avg_exp_diff) - 1) * 100
-
-    return avg_diff
 
   def header(self):
     self.OutputScript.write( "pdflatex -halt-on-error << _EOF\n" )
@@ -198,7 +137,7 @@ class TableGenerator(AbstractGenerator):
     self.OutputScript.write( "rm texput.aux texput.log \n" )
 
 
-  def loop( self, file_idx, plot_idx, plotResults):
+  def loop( self, file_idx, plot_idx, plotResults, extraResults):
 
     if plot_idx == 0:
       self.avergeIndex = 0
@@ -235,23 +174,11 @@ class TableGenerator(AbstractGenerator):
             self.avergeExtraArray[self.avergeIndex] = ( self.avergeExtraArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prYextra]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
           self.avergeArrayCount[self.avergeIndex] += 1
 
-        if self.PltConfig.measureBDRate:
-          resultsArray.append( [ result[prY], result[prYextra] ] )
-
       self.avergeIndex += 1
       TableLine += " & "
 
-    if plot_idx == 0:
-      self.bdReference = resultsArray
-
-    bdrate = 0
     if self.PltConfig.measureBDRate:
-      if not resultsArray == []:
-        bdrate = self.measureBdRatefct(self.bdReference, resultsArray )
-      if plot_idx == 0:
-        TableLine += "-- & "
-      else:
-        TableLine += formatTableNumber( bdrate ) + " & "
+      TableLine += formatTableNumber( extraResults[prrBD] ) + " & "
 
     TableLine = TableLine[:-3]
     TableLine += " \\\\ \n"

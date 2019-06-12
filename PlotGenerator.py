@@ -46,10 +46,11 @@ class PlotGenerator(AbstractGenerator):
     # Start gnuplot configuration
     self.OutputScript.write( "gnuplot << _EOF\n" )
 
+    GnuPlotTerminalConfig = "reset\n"
     if self.selectedGnuplotTerminal == "eps":
-      GnuPlotTerminalConfig = "set terminal postscript eps enhanced"
+      GnuPlotTerminalConfig += "set terminal postscript eps enhanced"
     elif self.selectedGnuplotTerminal == "pdf":
-      GnuPlotTerminalConfig = "set terminal pdfcairo mono"
+      GnuPlotTerminalConfig += "set terminal pdfcairo mono"
     else:
       return
 

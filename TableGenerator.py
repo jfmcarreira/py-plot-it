@@ -164,9 +164,9 @@ class TableGenerator(AbstractGenerator):
 
       if not result == []:
         PrintLine = True
-        TableLine += formatTableNumber( result[prY] )
+        TableLine += formatTableNumber( float(result[prY]) )
         if self.PltConfig.showExtra:
-          TableLine += " (" + formatTableNumber( result[prYextra] ) + ")"
+          TableLine += " (" + formatTableNumber( float(result[prYextra]) ) + ")"
         #TableLine += " & "
         if self.PltConfig.showAverage:
           self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)

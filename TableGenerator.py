@@ -133,7 +133,7 @@ class TableGenerator(AbstractGenerator):
     TableFooter = "\\bottomrule\n\end{tabular}\n\end{table}\n\end{document}"
     self.OutputScript.write( TableFooter )
     self.OutputScript.write( "\n_EOF\n" )
-    self.OutputScript.write( "mv texput.pdf " + self.PltConfig.plotFile + ".pdf\n")
+    self.OutputScript.write( "mv texput.pdf ${SCRIPT_NAME%%.*}.pdf\n")
     self.OutputScript.write( "rm texput.aux texput.log \n" )
 
 

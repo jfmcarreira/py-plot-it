@@ -94,7 +94,7 @@ class PlotGenerator(AbstractGenerator):
       for f in self.plotFileNameList:
         self.OutputScript.write( f + ".pdf " )
       self.OutputScript.write( "\"\n" )
-      convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=" +  self.PltConfig.plotFile + ".pdf"
+      convert_cmd = "gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=${SCRIPT_NAME%%.*}.pdf"
 
       if self.selectedGnuplotTerminal == "eps":
         self.OutputScript.write( "for f in $CONV_FILENAMES; do\n" )

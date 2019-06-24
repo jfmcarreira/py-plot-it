@@ -163,7 +163,7 @@ class AbstractGenerator:
 
     self.OutputScript = open( self.PltConfig.plotFile + ".bash", 'w' )
     # Write bash header
-    self.OutputScript.write( "#!/bin/bash\n" )
+    self.OutputScript.write( "#!/bin/bash\nSCRIPT_NAME=$(basename \"$0\")\n" )
 
     self.header()
 

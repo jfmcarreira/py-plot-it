@@ -115,7 +115,7 @@ class PlotGenerator(AbstractGenerator):
       return
 
     extraLegendInfo = ""
-    if self.PltConfig.measureBDRate:
+    if self.PltConfig.measureBDRate > 0:
       extraLegendInfo = formatNumber( extraResults[prrBD] )
     extraLegendInfo += " | "
     extraLegendInfo = extraLegendInfo[:-3]

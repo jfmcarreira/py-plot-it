@@ -219,12 +219,12 @@ class AbstractGenerator:
           self.bdReference = plotResults
 
         Bjontegaard = 0
-        if self.PltConfig.measureBDRate:
+        if self.PltConfig.measureBDRate > 0:
           if plot_idx == 0:
             Bjontegaard = "--"
           else:
             if not plotResults == []:
-              Bjontegaard = self.measureBdRatefct(self.bdReference, plotResults )
+              Bjontegaard = self.measureBjontegaard(self.bdReference, plotResults, self.PltConfig.measureBDRate)
         extraResults.append(Bjontegaard)
 
         self.loop( file_idx, plot_idx, plotResults, extraResults)
@@ -264,8 +264,8 @@ class AbstractGenerator:
 
     print("Finished!")
 
-  # BJONTEGAARD    Bjontegaard metric calculation34
-  def measureBdRatefct(self, reference, processed):
+  # BJONTEGAARD    Bjontegaard metric calculation
+  def measureBjontegaard(self, reference, processed, metric):
     """
     BJONTEGAARD    Bjontegaard metric calculation
     Bjontegaard's metric allows to compute the average % saving in bitrate
@@ -283,46 +283,63 @@ class AbstractGenerator:
     R2 = [float(x[prX]) for x in processed]
     Q2 = [float(x[prY]) for x in processed]
 
-    #print(R1)
-    #print(Q1)
-    #print(R2)
-    #print(Q2)
-
     log_R1 = map(math.log, R1)
     log_R2 = map(math.log, R2)
 
     log_R1 = numpy.log(R1)
     log_R2 = numpy.log(R2)
 
-    #print(log_R1)
-    #print(log_R2)
+    if metric == 1:
 
-    # Best cubic poly fit for graph represented by log_ratex, psrn_x.
-    poly1 = numpy.polyfit(Q1, log_R1, 3)
-    poly2 = numpy.polyfit(Q2, log_R2, 3)
+      # Best cubic poly fit for graph represented by log_ratex, psrn_x.
+      poly1 = numpy.polyfit(Q1, log_R1, 3)
+      poly2 = numpy.polyfit(Q2, log_R2, 3)
 
-    # Integration interval.
-    min_int = max([min(Q1), min(Q2)])
-    max_int = min([max(Q1), max(Q2)])
+      # Integration interval.
+      min_int = max([min(Q1), min(Q2)])
+      max_int = min([max(Q1), max(Q2)])
+      if max_int < min_int:
+        return 0.0;
 
-    # find integral
-    p_int1 = numpy.polyint(poly1)
-    p_int2 = numpy.polyint(poly2)
+      # find integral
+      p_int1 = numpy.polyint(poly1)
+      p_int2 = numpy.polyint(poly2)
 
-    # Calculate the integrated value over the interval we care about.
-    int1 = numpy.polyval(p_int1, max_int) - numpy.polyval(p_int1, min_int)
-    int2 = numpy.polyval(p_int2, max_int) - numpy.polyval(p_int2, min_int)
+      # Calculate the integrated value over the interval we care about.
+      int1 = numpy.polyval(p_int1, max_int) - numpy.polyval(p_int1, min_int)
+      int2 = numpy.polyval(p_int2, max_int) - numpy.polyval(p_int2, min_int)
 
-    # Calculate the average improvement.
-    avg_exp_diff = (int2 - int1) / (max_int - min_int)
+      # Calculate the average improvement.
+      avg_exp_diff = (int2 - int1) / (max_int - min_int)
 
-    # In really bad formed data the exponent can grow too large.
-    # clamp it.
-    if avg_exp_diff > 200:
-      avg_exp_diff = 200
+      # In really bad formed data the exponent can grow too large.
+      # clamp it.
+      if avg_exp_diff > 200:
+        avg_exp_diff = 200
 
-    # Convert to a percentage.
-    avg_diff = (math.exp(avg_exp_diff) - 1) * 100
+      # Convert to a percentage.
+      avg_diff = (math.exp(avg_exp_diff) - 1) * 100
+
+    elif metric == 2:
+      poly1 = numpy.polyfit(log_R1, Q1, 3)
+      poly2 = numpy.polyfit(log_R2, Q2, 3)
+
+      min_int = max([min(log_R1), min(log_R2)])
+      max_int = min([max(log_R1), max(log_R2)])
+
+      if max_int < min_int:
+        return 0.0;
+
+      p_int1 = numpy.polyint(poly1)
+      p_int2 = numpy.polyint(poly2)
+
+      int1 = numpy.polyval(p_int1, max_int) - numpy.polyval(p_int1, min_int)
+      int2 = numpy.polyval(p_int2, max_int) - numpy.polyval(p_int2, min_int)
+
+      avg_diff = (int2 - int1) / (max_int - min_int)
+
+    else:
+      avg_diff = 0.0
 
     return avg_diff
 

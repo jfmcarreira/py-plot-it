@@ -18,6 +18,10 @@ class TableGenerator(AbstractGenerator):
     self.Template = Template
 
   def header(self):
+
+    if self.PltConfig.measureBDRate == 0:
+      self.PltConfig.showOnlyBD = False
+
     self.OutputScript.write( "pdflatex -halt-on-error << _EOF\n" )
     LatexHeader = """\documentclass{article}
 \\usepackage{adjustbox,tabularx, colortbl, ctable, array, multirow}
@@ -29,6 +33,9 @@ class TableGenerator(AbstractGenerator):
 
     # get test data for headers
     plotResults = self.getData( [ int(0) for i in range( len( self.fileConfig ) )], [ int(0) for i in range( len( self.plotConfig ) )] )
+    self.TableHeaderLabels = []
+    for i in range ( self.numberPoints ):
+      self.TableHeaderLabels.append( plotResults[i][prLabel] )
 
     TableHeader = "\\toprule \n"
 
@@ -48,72 +55,122 @@ class TableGenerator(AbstractGenerator):
       LatexHeader += "l"
       TableHeader += " & "
 
-    LegendHeader = ""
-    for cfg in self.plotConfig:
-      LegendHeader += cfg.title + " - "
+    if self.PltConfig.showLinesColumnwise:
 
-    if not LegendHeader == "":
-      LatexHeader += "l"
-      TableHeader += replaceLabelChars( LegendHeader[:-3] ) + " & "
+      # Code based on the main abstract loop
+      currentPlotConfigChoice = [ int(0) for i in range( len( self.plotConfig ) )]
+      for plot_idx in range( self.numberLines ):
+        currentLegend = ""
+        for i in range( len( self.plotConfig )):
+          curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
+          currentLegend += self.plotConfig[i].name[curr_idx] + " - "
 
+        if not self.PltConfig.showOnlyBD:
+          for i in range ( self.numberPoints ):
+            LatexHeader += "c"
+            if not currentLegend == "":
+              TableHeader += processLabel(currentLegend[:-3]) + " - "
+            TableHeader += processLabel(plotResults[i][prLabel][1:-1]) + " & "
 
-    #print( "Generation %d plots with %d lines and %d points!" % (self.numberPlots, self.numberLines, self.numberPoints) )
+        if self.PltConfig.measureBDRate > 0:
+          LatexHeader += "c"
+          if not currentLegend == "":
+              TableHeader += processLabel(currentLegend[:-3]) + " - "
+          if self.PltConfig.measureBDRate == 1:
+            TableHeader += "BD-Rate & "
+          else:
+            TableHeader += "BD-Quality & "
 
-    self.TableHeaderLabels = []
-    for i in range ( self.numberPoints ):
-      LatexHeader += "c"
-      TableHeader += plotResults[i][prLabel][1:-1] + " & "
-      self.TableHeaderLabels.append( plotResults[i][prLabel] )
+        for i in reversed(range( len( self.plotConfig ))):
+          if currentPlotConfigChoice[i] ==  len( self.plotConfigChoice[i] ) - 1:
+            currentPlotConfigChoice[i] = 0
+          else:
+            currentPlotConfigChoice[i] += 1
+            break
 
-    if self.PltConfig.measureBDRate:
-      LatexHeader += "c"
-      TableHeader += "BD-RATE & "
+    else:
+      LegendHeader = ""
+      for cfg in self.plotConfig:
+        LegendHeader += cfg.title + " - "
+
+      if not LegendHeader == "":
+        LatexHeader += "l"
+        TableHeader += replaceLabelChars( LegendHeader[:-3] ) + " & "
+
+      if not self.PltConfig.showOnlyBD:
+        for i in range ( self.numberPoints ):
+          LatexHeader += "c"
+          TableHeader += plotResults[i][prLabel][1:-1] + " & "
+
+      if self.PltConfig.measureBDRate > 0:
+        LatexHeader += "c"
+        if self.PltConfig.measureBDRate == 1:
+          TableHeader += "BD-Rate & "
+        else:
+          TableHeader += "BD-Quality & "
 
     TableHeader = TableHeader[:-3]
     LatexHeader += "}"
     TableHeader += "\\\\ \n\midrule"
 
     self.OutputScript.write( LatexHeader + "\n" + processLatexText( TableHeader ) + "\n" )
+    self.tableLine = ""
 
-    if self.PltConfig.showAverage:
-      self.avergeArray = [ float(0) for i in range( self.numberPoints * self.numberLines )]
-      self.avergeArrayCount = [ float(0) for i in range( self.numberPoints * self.numberLines )]
+    numAveragePoints = 0;
+    if not self.PltConfig.showOnlyBD:
+      numAveragePoints += self.numberPoints * self.numberLines
+      if self.PltConfig.showExtra:
+        numAveragePoints *= 2
+    if self.PltConfig.measureBDRate > 0:
+      numAveragePoints += self.numberLines
+    self.avergeArray = [ float(0) for i in range( numAveragePoints )]
+    self.avergeArrayCount = [ float(0) for i in range( numAveragePoints )]
     self.avergeIndex = 0
 
-    if self.PltConfig.showExtra:
-      self.avergeExtraArray = [ float(0) for i in range( self.numberPoints * self.numberLines )]
 
   def printAverage(self):
 
-    self.OutputScript.write( "\multirow{" + str( self.numberLines ) + "}{*}{\\textbf{Average}}\n" )
+    if self.PltConfig.showLinesColumnwise:
+      TableLine = "\\textbf{Average}"
+    else:
+      TableLine = "\multirow{" + str( self.numberLines ) + "}{*}{\\textbf{Average}}\n"
 
     self.avergeIndex = 0
     ## Loop through each plot on the current file (several lines)
     currentPlotConfigChoice = [ int(0) for i in range( len( self.plotConfig ) )] # Marks which line choice are we plotting
     for plot_idx in range( self.numberLines ):
 
-      TableLine = "& "
+      TableLine += "& "
 
       ## configure legend
-      self.currentLegend = ""
-      for i in range( len( self.plotConfig )):
-        curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
-        self.currentLegend += self.plotConfig[i].name[curr_idx] + " - "
-      self.currentLegend = processLabel(self.currentLegend[:-3])
-
-      if not self.currentLegend == "":
-        TableLine += self.currentLegend + " & "
+      if not self.PltConfig.showLinesColumnwise:
+        self.currentLegend = ""
+        for i in range( len( self.plotConfig )):
+          curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
+          self.currentLegend += self.plotConfig[i].name[curr_idx] + " - "
+        self.currentLegend = processLabel(self.currentLegend[:-3])
+        if not self.currentLegend == "":
+          TableLine += self.currentLegend + " & "
 
       for i in range ( self.numberPoints ):
-        TableLine += formatTableNumber( self.avergeArray[self.avergeIndex] )
-        if self.PltConfig.showExtra:
-          TableLine += " (" + formatTableNumber( self.avergeExtraArray[self.avergeIndex] ) + ")"
-        TableLine += " & "
+        if not self.PltConfig.showOnlyBD:
+          TableLine += formatTableNumber( self.avergeArray[self.avergeIndex] )
+          self.avergeIndex += 1
+          if self.PltConfig.showExtra:
+            TableLine += " (" + formatTableNumber( self.avergeExtraArray[self.avergeIndex] ) + ")"
+            self.avergeIndex += 1
+          TableLine += " & "
+
+      if self.PltConfig.measureBDRate > 0:
+        if plot_idx > 0:
+          TableLine += formatTableNumber( self.avergeArray[self.avergeIndex] ) + " & "
+        else:
+          TableLine += "-- & "
         self.avergeIndex += 1
 
       TableLine = TableLine[:-3]
-      TableLine += "\\\\ \n"
-      self.OutputScript.write( processLatexText( TableLine ) )
+      if not self.PltConfig.showLinesColumnwise:
+        TableLine += "\\\\ \n"
 
       ## LOOP
       for i in reversed(range( len( self.plotConfig ))):
@@ -123,7 +180,9 @@ class TableGenerator(AbstractGenerator):
           currentPlotConfigChoice[i] += 1
           break
 
-
+    if self.PltConfig.showLinesColumnwise:
+      TableLine += "\\\\ \n"
+    self.OutputScript.write( processLatexText( TableLine ) )
 
   def footer(self):
 
@@ -143,15 +202,17 @@ class TableGenerator(AbstractGenerator):
       self.avergeIndex = 0
 
     PrintLine = True
-    TableLine = ""
 
     if plot_idx == 0 and self.showTitle:
-      TableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + replaceLabelChars(self.currentTitle) + "}" + " & "
+      if self.PltConfig.showLinesColumnwise:
+        self.tableLine = replaceLabelChars(self.currentTitle) + " & "
+      else:
+        self.tableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + replaceLabelChars(self.currentTitle) + "}" + " & "
     elif self.PltConfig.showAverage or self.showTitle:
-      TableLine += " & "
+      self.tableLine += " & "
 
-    if not self.currentLegend == "":
-      TableLine += self.currentLegend + " & "
+    if not self.PltConfig.showLinesColumnwise and not self.currentLegend == "":
+      self.tableLine += self.currentLegend + " & "
 
     resultsArray =  []
     for i in range ( self.numberPoints ):
@@ -164,30 +225,41 @@ class TableGenerator(AbstractGenerator):
 
       if not result == []:
         PrintLine = True
-        TableLine += formatTableNumber( float(result[prY]) )
+
+      if not result == [] and not self.PltConfig.showOnlyBD:
+        self.tableLine += formatTableNumber( float(result[prY]) )
         if self.PltConfig.showExtra:
-          TableLine += " (" + formatTableNumber( float(result[prYextra]) ) + ")"
-        #TableLine += " & "
-        if self.PltConfig.showAverage:
-          self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
-          if self.PltConfig.showExtra:
-            self.avergeExtraArray[self.avergeIndex] = ( self.avergeExtraArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prYextra]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+          self.tableLine += " (" + formatTableNumber( float(result[prYextra]) ) + ")"
+        self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+        self.avergeArrayCount[self.avergeIndex] += 1
+        self.avergeIndex += 1
+        if self.PltConfig.showExtra:
+          self.avergeExtraArray[self.avergeIndex] = ( self.avergeExtraArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prYextra]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
           self.avergeArrayCount[self.avergeIndex] += 1
+          self.avergeIndex += 1
 
+        self.tableLine += " & "
+
+    if self.PltConfig.measureBDRate > 0:
+      self.tableLine += formatTableNumber( extraResults[prrBD] ) + " & "
+      if plot_idx > 0:
+        self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(extraResults[prrBD]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+      self.avergeArrayCount[self.avergeIndex] += 1
       self.avergeIndex += 1
-      TableLine += " & "
 
-    if self.PltConfig.measureBDRate:
-      TableLine += formatTableNumber( extraResults[prrBD] ) + " & "
+    self.tableLine = self.tableLine[:-3]
+    if not self.PltConfig.showLinesColumnwise:
+      self.tableLine += " \\\\ \n"
+      if PrintLine:
+        self.OutputScript.write( processLatexText( self.tableLine ) )
+        self.tableLine = ""
 
-    TableLine = TableLine[:-3]
-    TableLine += " \\\\ \n"
-    if PrintLine:
-      self.OutputScript.write( processLatexText( TableLine ) )
 
   def last(self):
-    TableLine = "\midrule \n"
-    self.OutputScript.write( processLatexText( TableLine ) )
+    if self.PltConfig.showLinesColumnwise:
+      self.tableLine += " \\\\ \n"
+    self.tableLine += "\midrule \n"
+    self.OutputScript.write( processLatexText( self.tableLine ) )
 
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;

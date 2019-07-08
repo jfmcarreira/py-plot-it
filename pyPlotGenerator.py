@@ -56,16 +56,17 @@ class PlotConfiguration(dt.DataSet):
 
   _bgOut = dt.BeginGroup("Output definition").set_pos(col=1)
   plotFile = di.StringItem("Output", default = PlotFileDefault )
-  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=TypeDefault).set_pos(col=0).set_prop("display", callback=updateOutputType)
+  selectedOutput = di.ChoiceItem("Output type", [ (0, "Figure"), (1, "Table") ], default=TypeDefault).set_pos(col=0)#.set_prop("display", callback=updateOutputType)
   keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", AxisValues, default=XValueDefault)
   selectYValues = di.ChoiceItem("Y values", AxisValues, default=YValueDefault)
-  measureBDRate = di.BoolItem("Measure BD-Rate", default=False )
+  measureBDRate = di.ChoiceItem("Bjontegaard", ["Disabled", "BD-Rate", "BD-Quality"], default=0)
+  #measureBDRate = di.BoolItem("Measure BD-Rate", default=False )
   _egOut = dt.EndGroup("Output definition")
 
 
-  _bgTabG0 = dt.BeginTabGroup("Tab1").set_pos(col=2)
-  _bgFig = dt.BeginGroup("Figure definition")
+  _bgTabG0 = BeginTabGroup("Tab1").set_pos(col=2)
+  _bgFig = dt.BeginGroup("Figure options").set_prop("display", callback=updateOutputType)
   legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   terminalIdx = di.ChoiceItem( "Gnuplot terminal", GnuplotTerminals, default=GnuplotTerminalDefault )
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
@@ -75,16 +76,16 @@ class PlotConfiguration(dt.DataSet):
   #_egAx = dt.EndGroup("Axis definition")
   showTitle = di.BoolItem("Display plot title", default=True ).set_pos(col=0)
   showBars = di.BoolItem("Generate bar plot", default=GenerateBarPlotDefault ).set_pos(col=1)
-  _egFig = dt.EndGroup("Figure definition")
+  _egFig = dt.EndGroup("Figure options")
 
-  _bgTab = dt.BeginGroup("Table definition")
+  _bgTab = BeginGroup("Table options")
+  showLinesColumnwise = di.BoolItem("Show lines column-wise", default=True )
+  showOnlyBD = di.BoolItem("Only show Bjontegaard results", default=False )
   showAverage = di.BoolItem("Show average values", default=True )
   showExtra = di.BoolItem("Extra Result", default=False ).set_pos(col=0)
   selectExtraYValues = di.ChoiceItem("Extra values", AxisValues, default=YValueValueExtraDefault).set_pos(col=0)
-  _eTab = dt.EndGroup("Table definition")
+  _eTab = dt.EndGroup("Table options")
   _eTabG0 = dt.EndTabGroup("Tab1")
-
-
 
 class Templates(dt.DataSet):
 

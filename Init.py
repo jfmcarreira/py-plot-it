@@ -112,8 +112,15 @@ class ConfigurationList:
     self.sort = 0
     self.showLabels = 1
 
-ConfigFileName = "cfgData.py"
-exec(open(ConfigFileName).read())
+
+if os.path.exists("cfgData.py"):
+  exec(open("cfgData.py").read())
+elif os.path.exists("../cfgData.py"):
+  exec(open("../cfgData.py").read())
+else:
+  print("No cfg file!")
+  exit()
+
 
 ############################################################################################
 # Read data file

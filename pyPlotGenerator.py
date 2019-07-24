@@ -45,7 +45,7 @@ class PlotConfiguration(dt.DataSet):
       displayList = cfg.configs
     if cfg.selectAll == 1:
       defaults=[ i for i in range(len(cfg.configs)) ]
-    exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(5)" % (i) )
+    exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(%d)" % (i, cfg.numColumns) )
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
   _bdCatG = dt.BeginGroup("Categories").set_pos(col=0)

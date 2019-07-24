@@ -111,6 +111,7 @@ class ConfigurationList:
     self.selectAll = 0
     self.sort = 0
     self.showLabels = 1
+    self.numColumns = 5
 
 
 if os.path.exists("cfgData.py"):

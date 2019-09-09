@@ -282,6 +282,9 @@ class AbstractGenerator:
     Q1 = [float(x[prY]) for x in reference]
     R2 = [float(x[prX]) for x in processed]
     Q2 = [float(x[prY]) for x in processed]
+    
+    if len(R1) < 4 or len(R2) < 4 or len(Q1) < 4 or len(Q2) < 4:
+      return "--"
 
     log_R1 = map(math.log, R1)
     log_R2 = map(math.log, R2)

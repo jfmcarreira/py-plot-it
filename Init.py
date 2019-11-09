@@ -79,6 +79,9 @@ AxisLimitDefaultY = ""
 XValues = []
 YValues = []
 AxisValues = []
+DefaultLinePlotCfg = []
+DefaultPointsPlotCfg = []
+DefaultSkipPlotCfg = []
 
 XValueDefault = 0
 YValueDefault = 0
@@ -109,6 +112,7 @@ class ConfigurationList:
     self.values_tab = -1
     self.use_for_plot = 0
     self.selectAll = 0
+    self.selectionArray = []
     self.sort = 0
     self.showLabels = 1
     self.numColumns = 5
@@ -174,6 +178,7 @@ elif ConfigVersion == 3:
 
 if BuildAxisValuesAuto == True:
   AxisValues = []
+  AxisValuesRaw = []
   for col in range( 1,  len( ResultsTableHeader ) + 1 ):
     label = ResultsTableHeader[col - 1]
     if not XValueDefaultLabel == "":
@@ -186,8 +191,8 @@ if BuildAxisValuesAuto == True:
     for j in range( len( Configs ) ):
       if Configs[j].tab == col:
         label = Configs[j].title
-    l = [col, findMap( ConfigMapping, label )]
-    AxisValues.append( tuple( l) )
+    AxisValues.append( tuple( [col, findMap( ConfigMapping, label )] ) )
+    AxisValuesRaw.append( tuple( [col, label ] ) )
 
 else:
   for i in  XValues:

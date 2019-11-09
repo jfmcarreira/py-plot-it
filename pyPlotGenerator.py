@@ -27,10 +27,43 @@ class PlotConfiguration(dt.DataSet):
   def updateOutputType(self, item, value):
     print("\nitem: ", item, "\nvalue:", value)
 
+  def applyDefaults(self, fname):
 
+    for i in range(len(Configs)):
+      cfg = Configs[i]
+      #print( self.cfgChoiceList[i][0] )
+      #self.PltConfig.cfgChoice%d
+      if not cfg.selectionArray == []:
+        defaults = cfg.selectionArray
+        #self.cfgChoiceList[i] = defaults
+        exec("self.cfgChoice%d = defaults" % (i) )
+
+    XValueDefault = 0
+    YValueDefault = 0
+    for col in range( len( AxisValuesRaw ) ):
+      label = AxisValuesRaw[col][1]
+      if not XValueDefaultLabel == "":
+        if XValueDefaultLabel == label:
+          XValueDefault = AxisValuesRaw[col][0]
+      if not YValueDefaultLabel == "":
+        if YValueDefaultLabel == label:
+          YValueDefault = AxisValuesRaw[col][0]
+
+
+    self.linesPlotCfg = DefaultLinePlotCfg
+    self.pointsPlotCfg = DefaultPointsPlotCfg
+    self.skipFilterCfg = DefaultSkipPlotCfg
+
+    self.selectXValues = XValueDefault
+    self.selectYValues = YValueDefault
+    self.plotFile = fname
+
+  #def __init__(self, name):
+    #dt.DataSet.__init__(self)
   ############################################################################################
   # Class Initialization
   ############################################################################################
+  print("Create GUI options")
   aAvailableCfg = []
   for cfg in Configs:
     aAvailableCfg.append( cfg.title )
@@ -43,15 +76,17 @@ class PlotConfiguration(dt.DataSet):
       displayList = cfg.name
     else:
       displayList = cfg.configs
-    if cfg.selectAll == 1:
-      defaults=[ i for i in range(len(cfg.configs)) ]
+    if not cfg.selectionArray == []:
+      defaults = cfg.selectionArray
+    elif cfg.selectAll == 1:
+      defaults = [ i for i in range(len(cfg.configs)) ]
     exec("cfgChoice%d = di.MultipleChoiceItem( cfg.title, displayList, defaults ).vertical(%d)" % (i, cfg.numColumns) )
     exec("cfgChoiceList.append( cfgChoice%d )" % (i) )
 
   _bdCatG = dt.BeginGroup("Categories").set_pos(col=0)
-  linesPlotCfg = di.MultipleChoiceItem( "Lines", aAvailableCfg, default=[] ).vertical(2).set_pos(col=0)
-  pointsPlotCfg = di.MultipleChoiceItem( "Points", aAvailableCfg, default=[] ).vertical(2).set_pos(col=1)
-  skipFilterCfg = di.MultipleChoiceItem( "Skip", aAvailableCfg, default=[] ).vertical(2).set_pos(col=2)
+  linesPlotCfg = di.MultipleChoiceItem( "Lines", aAvailableCfg, default=DefaultLinePlotCfg ).vertical(2).set_pos(col=0)
+  pointsPlotCfg = di.MultipleChoiceItem( "Points", aAvailableCfg, default=DefaultPointsPlotCfg ).vertical(2).set_pos(col=1)
+  skipFilterCfg = di.MultipleChoiceItem( "Skip", aAvailableCfg, default=DefaultSkipPlotCfg ).vertical(2).set_pos(col=2)
   _eCatG = dt.EndGroup("Categories")
 
   _bgOut = dt.BeginGroup("Output definition").set_pos(col=1)
@@ -67,7 +102,7 @@ class PlotConfiguration(dt.DataSet):
 
   _bgTabG0 = BeginTabGroup("Tab1").set_pos(col=2)
   _bgFig = dt.BeginGroup("Figure options").set_prop("display", callback=updateOutputType)
-  legendPosition =["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
+  legendPosition = ["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
   terminalIdx = di.ChoiceItem( "Gnuplot terminal", GnuplotTerminals, default=GnuplotTerminalDefault )
   legendPositionIdx = di.ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
   #_bgAx = dt.BeginGroup("Axis definition")
@@ -99,30 +134,42 @@ class Templates(dt.DataSet):
   LatexTemplate = di.TextItem("", LatexTemplateDefault)
   _egT = EndGroup("Main latex code")
 
-
 if __name__ == '__main__':
 
   from guidata.qt.QtGui import QApplication
+  print("Start main")
   #Create QApplication
   _app = QApplication(sys.argv)
 
   config = PlotConfiguration("Plot Configutaion")
   templates = Templates("Templates")
 
+  flagAutoGenerate = False
+  if ConfigVersion == 3:
+    if len(sys.argv) > 1:
+      print("Loading default values from file " + sys.argv[1])
+      exec( open( sys.argv[1] ).read() )
+      config.applyDefaults( sys.argv[1]  )
+      flagAutoGenerate = True
+      #flagAutoGenerate = False
+
   g = dt.DataSetGroup( [config, templates], title='Python Publication ready outputs' )
   while (1):
-    if g.edit():
 
-      generator = []
-      if config.selectedOutput == 0:
-        generator = PlotGenerator(Configs, ResultsTable, config, templates)
+    if not flagAutoGenerate:
+      if not g.edit():
+        break
 
-      elif config.selectedOutput == 1:
-        generator = TableGenerator(Configs, ResultsTable, config, templates)
-      else:
-        continue
-      generator.generateOutput()
+    generator = []
+    if config.selectedOutput == 0:
+      generator = PlotGenerator(Configs, ResultsTable, config, templates)
+    elif config.selectedOutput == 1:
+      generator = TableGenerator(Configs, ResultsTable, config, templates)
     else:
-      break;
+      continue
+    generator.generateOutput()
+    if flagAutoGenerate:
+      break
+
 
 # kate: indent-mode python; space-indent on; indent-width 2; tab-indents off; tab-width 2; replace-tabs on;

@@ -119,7 +119,9 @@ class AbstractGenerator:
     self.numberPoints = 1
 
     for i in range( len( self.Configs )):
+      #exec("print( type( self.PltConfig.cfgChoice%d ) )" % (i) )
       exec("self.aCfgChoice.append( self.PltConfig.cfgChoice%d )" % (i) )
+      #print( type( self.aCfgChoice[i] ) )
       use_for_plot = False
       use_for_points = False
       for j in self.PltConfig.linesPlotCfg:
@@ -282,7 +284,7 @@ class AbstractGenerator:
     Q1 = [float(x[prY]) for x in reference]
     R2 = [float(x[prX]) for x in processed]
     Q2 = [float(x[prY]) for x in processed]
-    
+
     if len(R1) < 4 or len(R2) < 4 or len(Q1) < 4 or len(Q2) < 4:
       return "--"
 

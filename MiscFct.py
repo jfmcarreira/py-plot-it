@@ -5,6 +5,11 @@ import os
 ############################################################################################
 # Auxiliary functions
 ############################################################################################
+def getFilename(fullname):
+  head, tail = os.path.split(fullname)
+  filename, file_extension = os.path.splitext( tail )
+  return filename
+
 def filterResults( results, col, value):
   filtResults = []
   for line in results:

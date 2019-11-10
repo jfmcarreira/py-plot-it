@@ -56,7 +56,10 @@ class PlotConfiguration(dt.DataSet):
 
     self.selectXValues = XValueDefault
     self.selectYValues = YValueDefault
-    self.plotFile = fname
+
+    self.measureBDRate = DefaultMeasureBDRate
+
+    self.plotFile = ''.join( getFilename( fname ).split("_")[1:] )
 
   #def __init__(self, name):
     #dt.DataSet.__init__(self)
@@ -95,7 +98,7 @@ class PlotConfiguration(dt.DataSet):
   keepPlotScript = di.BoolItem("Keep bash script", default=KeepPlotFileDefault ).set_pos(col=1)
   selectXValues = di.ChoiceItem("X values", AxisValues, default=XValueDefault)
   selectYValues = di.ChoiceItem("Y values", AxisValues, default=YValueDefault)
-  measureBDRate = di.ChoiceItem("Bjontegaard", ["Disabled", "BD-Rate", "BD-Quality"], default=0)
+  measureBDRate = di.ChoiceItem("Bjontegaard", ["Disabled", "BD-Rate", "BD-Quality"], default=DefaultMeasureBDRate)
   #measureBDRate = di.BoolItem("Measure BD-Rate", default=False )
   _egOut = dt.EndGroup("Output definition")
 
@@ -144,14 +147,9 @@ if __name__ == '__main__':
   config = PlotConfiguration("Plot Configutaion")
   templates = Templates("Templates")
 
-  flagAutoGenerate = False
-  if ConfigVersion == 3:
-    if len(sys.argv) > 1:
-      print("Loading default values from file " + sys.argv[1])
-      exec( open( sys.argv[1] ).read() )
-      config.applyDefaults( sys.argv[1]  )
-      flagAutoGenerate = True
-      #flagAutoGenerate = False
+  if flagAutoGenerate:
+    config.applyDefaults( sys.argv[1]  )
+
 
   g = dt.DataSetGroup( [config, templates], title='Python Publication ready outputs' )
   while (1):

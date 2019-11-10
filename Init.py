@@ -82,7 +82,7 @@ AxisValues = []
 DefaultLinePlotCfg = []
 DefaultPointsPlotCfg = []
 DefaultSkipPlotCfg = []
-
+DefaultMeasureBDRate = 0
 XValueDefault = 0
 YValueDefault = 0
 YValueValueExtraDefault = -1
@@ -204,3 +204,12 @@ else:
       l = list( AxisValues[i] )
       l[0] = AxisValues[i-1][0] + 1
       AxisValues[i] = tuple( l )
+
+flagAutoGenerate = False
+if ConfigVersion == 3:
+  if len(sys.argv) > 1:
+    print("Loading default values from file " + sys.argv[1])
+    exec( open( sys.argv[1] ).read() )
+    #config.applyDefaults( sys.argv[1]  )
+    flagAutoGenerate = True
+    #flagAutoGenerate = False

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import os, sys
-from operator import itemgetter
+import operator
 from MiscFct import *
 
 ############################################################################################
@@ -171,7 +171,7 @@ elif ConfigVersion == 3:
     currConfig.details = resultsGetDetails( ResultsTable, currConfig.tab)
     currConfig.details = translateMappings( ConfigMapping, currConfig.details )
     if currConfig.sort == 1:
-      currConfig.details.sort(key=itemgetter(0))
+      currConfig.details.sort(key=operator.itemgetter(0))
     for j in range( len( currConfig.details ) ):
       currConfig.configs.append( currConfig.details[j][0] )
       currConfig.name.append( currConfig.details[j][1] )
@@ -214,3 +214,4 @@ if ConfigVersion == 3:
     #config.applyDefaults( sys.argv[1]  )
     flagAutoGenerate = True
     #flagAutoGenerate = False
+

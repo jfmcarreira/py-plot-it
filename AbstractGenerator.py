@@ -8,6 +8,7 @@ from operator import itemgetter, attrgetter
 import signal
 import numpy
 import math
+import operator
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 from MiscFct import *

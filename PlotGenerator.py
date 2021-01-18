@@ -138,7 +138,13 @@ class PlotGenerator(AbstractGenerator):
       self.plotCommand += " '-' using " + str(prY+1) + ":xtic(" + str(prLabel+1) + ") ls " + str( plot_idx + 100 )
       #self.plotCommand += " ti col"
     else:
-      self.plotCommand += " '-' using " + str(prX+1) + ":" + str(prY+1) + " w lp ls " + str( plot_idx + 1 )
+      self.plotCommand += " '-' using " + str(prX+1) + ":" + str(prY+1)
+      if self.PltConfig.showLines:
+        self.plotCommand += " w lp"
+      else:
+        self.plotCommand += " w p"
+      self.plotCommand += " ls " + str( plot_idx + 1 )
+
     self.plotCommand += " title '" + self.currentLegend + "',"
 
     #if last:

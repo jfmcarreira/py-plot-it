@@ -9,14 +9,20 @@ def processLatexText(label):
 
 
 def formatTableNumber(value):
-  return formatNumber( value )
+  try:
+    fmt = formatNumber( value )
+  except:
+    print("Cannot format %s" % value )
+    exit(1)
+  return fmt
 
 
 class TableGenerator(AbstractGenerator):
   def __init__(self, Configs, Results, PltConfig, Template):
     AbstractGenerator.__init__(self, Configs, Results, PltConfig)
     self.Template = Template
-
+    self.useMultiRow = False
+    
   def header(self):
 
     if self.PltConfig.measureBDRate == 0:
@@ -201,13 +207,16 @@ class TableGenerator(AbstractGenerator):
     if plot_idx == 0:
       self.avergeIndex = 0
 
-    PrintLine = True
+    PrintLine = False
 
     if plot_idx == 0 and self.showTitle:
       if self.PltConfig.showLinesColumnwise:
         self.tableLine = replaceLabelChars(self.currentTitle) + " & "
       else:
-        self.tableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + replaceLabelChars(self.currentTitle) + "}" + " & "
+        if self.useMultiRow:
+          self.tableLine = "\multirow{" + str( self.numberLines ) + "}{*}{" + replaceLabelChars(self.currentTitle) + "}" + " & "
+        else:
+          self.tableLine = replaceLabelChars(self.currentTitle) + " & "
     elif self.PltConfig.showAverage or self.showTitle:
       self.tableLine += " & "
 
@@ -230,29 +239,33 @@ class TableGenerator(AbstractGenerator):
         self.tableLine += formatTableNumber( float(result[prY]) )
         if self.PltConfig.showExtra:
           self.tableLine += " (" + formatTableNumber( float(result[prYextra]) ) + ")"
-        self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
-        self.avergeArrayCount[self.avergeIndex] += 1
-        self.avergeIndex += 1
-        if self.PltConfig.showExtra:
-          self.avergeExtraArray[self.avergeIndex] = ( self.avergeExtraArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prYextra]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+        if self.PltConfig.showAverage:
+          self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prY]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
           self.avergeArrayCount[self.avergeIndex] += 1
           self.avergeIndex += 1
+          if self.PltConfig.showExtra:
+            self.avergeExtraArray[self.avergeIndex] = ( self.avergeExtraArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(result[prYextra]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+            self.avergeArrayCount[self.avergeIndex] += 1
+            self.avergeIndex += 1
 
         self.tableLine += " & "
 
     if self.PltConfig.measureBDRate > 0:
+      if self.PltConfig.showOnlyBD and extraResults[prrBD] == "NaN":
+         PrintLine = False
       self.tableLine += formatTableNumber( extraResults[prrBD] ) + " & "
-      if plot_idx > 0:
-        self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(extraResults[prrBD]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
-      self.avergeArrayCount[self.avergeIndex] += 1
-      self.avergeIndex += 1
+      if self.PltConfig.showAverage:
+        if plot_idx > 0:
+          self.avergeArray[self.avergeIndex] = ( self.avergeArray[self.avergeIndex] * self.avergeArrayCount[self.avergeIndex] + float(extraResults[prrBD]) ) / (self.avergeArrayCount[self.avergeIndex] + 1)
+        self.avergeArrayCount[self.avergeIndex] += 1
+        self.avergeIndex += 1
 
     self.tableLine = self.tableLine[:-3]
     if not self.PltConfig.showLinesColumnwise:
       self.tableLine += " \\\\ \n"
       if PrintLine:
         self.OutputScript.write( processLatexText( self.tableLine ) )
-        self.tableLine = ""
+      self.tableLine = ""
 
 
   def last(self):

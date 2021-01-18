@@ -50,6 +50,7 @@ YValues = [(8, "PSNR [dB]"), (9, "SSIM"), (10, "AFFECTED_PSNR"), (11, "WPSNR"), 
 ResultsFileDefault = "summary_decoding"
 FilterNonExistent = 1
 
+
 PlotFileDefault = "pyPlotQuality"
 KeepPlotFileDefault = 1
 PlotLegendDefault = 3
@@ -64,6 +65,11 @@ GenerateBarPlotDefault = 0
 # EPS | PDF
 GnuplotTerminalDefault = 1
 
+# Table
+DefaultShowAverage = True
+DefaultShowLinesColumnwise = False
+DefaultShowOnlyBD = True
+TypeDefault = 0
 
 ###################################################################################################################
 # Template

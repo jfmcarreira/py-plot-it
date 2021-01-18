@@ -125,6 +125,7 @@ class AbstractGenerator:
       #print( type( self.aCfgChoice[i] ) )
       use_for_plot = False
       use_for_points = False
+      skip_config = False
       for j in self.PltConfig.linesPlotCfg:
         if self.Configs[i].title == self.PltConfig.aAvailableCfg[j]:
           use_for_plot = True
@@ -134,27 +135,33 @@ class AbstractGenerator:
         if self.Configs[i].title == self.PltConfig.aAvailableCfg[j]:
           use_for_points = True
           break
-
-      if not use_for_points:
-        if use_for_plot == 0:
-          self.fileConfig.append( self.Configs[i] )
-          self.fileConfigChoice.append( self.aCfgChoice[i] )
-          self.numberPlots *= len( self.aCfgChoice[i] )
+      
+      for j in self.PltConfig.skipFilterCfg:
+        if self.Configs[i].title == self.PltConfig.aAvailableCfg[j]:
+          skip_config = True
+          break
+        
+      if not skip_config:
+        if not use_for_points:
+          if use_for_plot == 0:
+            self.fileConfig.append( self.Configs[i] )
+            self.fileConfigChoice.append( self.aCfgChoice[i] )
+            self.numberPlots *= len( self.aCfgChoice[i] )
+          else:
+            #plotConditions += 1
+            self.plotConfig.append( self.Configs[i] )
+            self.plotConfigChoice.append( self.aCfgChoice[i] )
+            self.numberLines *= len( self.aCfgChoice[i] )
+          configList = []
+          for j in self.aCfgChoice[i]:
+            configList.append( self.Configs[i].configs[j] )
+          self.OutputResults = filterSeveralResults( self.OutputResults, self.Configs[i].tab, configList )
         else:
-          #plotConditions += 1
-          self.plotConfig.append( self.Configs[i] )
-          self.plotConfigChoice.append( self.aCfgChoice[i] )
-          self.numberLines *= len( self.aCfgChoice[i] )
-        configList = []
-        for j in self.aCfgChoice[i]:
-          configList.append( self.Configs[i].configs[j] )
-        self.OutputResults = filterSeveralResults( self.OutputResults, self.Configs[i].tab, configList )
-      else:
-        for label in self.Configs[i].name:
-          self.barPlotLabelsCfg.append( label )
-        self.pointConfig.append( self.Configs[i] )
-        self.pointConfigChoice.append( self.aCfgChoice[i] )
-        self.numberPoints *= len( self.aCfgChoice[i] )
+          for label in self.Configs[i].name:
+            self.barPlotLabelsCfg.append( label )
+          self.pointConfig.append( self.Configs[i] )
+          self.pointConfigChoice.append( self.aCfgChoice[i] )
+          self.numberPoints *= len( self.aCfgChoice[i] )
 
 
     if self.numberPlots == 0 or plotConditions == 0:
@@ -221,7 +228,7 @@ class AbstractGenerator:
         if plot_idx == 0:
           self.bdReference = plotResults
 
-        Bjontegaard = 0
+        Bjontegaard = "NaN"
         if self.PltConfig.measureBDRate > 0:
           if plot_idx == 0:
             Bjontegaard = "--"
@@ -287,7 +294,7 @@ class AbstractGenerator:
     Q2 = [float(x[prY]) for x in processed]
 
     if len(R1) < 4 or len(R2) < 4 or len(Q1) < 4 or len(Q2) < 4:
-      return "--"
+      return "NaN"
 
     log_R1 = map(math.log, R1)
     log_R2 = map(math.log, R2)

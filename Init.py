@@ -93,6 +93,10 @@ YValueDefaultLabel = ""
 
 GenerateBarPlotDefault = 0
 GnuplotTerminalDefault = "eps"
+DefaultMeasureBDRate = 0
+DefaultShowLinesColumnwise = False
+DefaultShowOnlyBD = False
+DefaultShowAverage = True
 
 ConfigFileName = "cfgData.py"
 

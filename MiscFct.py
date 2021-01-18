@@ -90,7 +90,7 @@ def processLabel(label):
 
 def formatNumber(value):
   if isinstance(value, str):
-    if value == "--":
+    if value == "--" or value == "NaN":
       return value
     else:
       assert(0)

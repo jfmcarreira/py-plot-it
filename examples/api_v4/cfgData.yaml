@@ -1,0 +1,128 @@
+#!/bin/python
+
+###################################################################################################################
+# API version
+ConfigVersion: 4
+
+
+###################################################################################################################
+# Results column Configuration
+ResultsFile: summary_results
+BuildAxisValuesAuto: true
+
+columns:
+  - title: Script+Version
+    tab: 1 # starts with 1
+    selectAll: 1
+
+  - title: Base
+    label: BASE
+    selectAll: 1
+
+  - title: Projection
+    label: PROJECTION
+    selectAll: 1
+    sort: 1
+
+  - title: Sequence
+    label: SEQUENCE
+    selectAll: 1
+
+  - title: Condition
+    label: CONDITION
+    selectAll: 1
+    sort: 0
+    numColumns: 2
+
+  - title: Rate/QP
+    label: RATE_QP
+    selectAll: 1
+    sort: 1
+
+
+#    NumberOfColumns = 6
+#    Configs = [ ConfigurationList() for i in range(NumberOfColumns)]
+#    ci = -1;
+#
+#    ## Base
+#    ci = ci + 1
+#    Configs[ci].title      = 'Script+Version'
+#    Configs[ci].label      = 'SCRIPT'
+#    Configs[ci].selectAll  = 1
+#
+#    ## Base
+#    ci = ci + 1
+#    Configs[ci].title      = 'Base'
+#    Configs[ci].label      = 'BASE'
+#    Configs[ci].selectAll  = 1
+#
+#    ## Projection
+#    ci = ci + 1
+#    Configs[ci].title      = 'Projection'
+#    Configs[ci].label      = 'PROJECTION'
+#    Configs[ci].selectAll  = 1
+#
+#    ## Sequence
+#    ci = ci + 1
+#    Configs[ci].title      = 'Sequence'
+#    Configs[ci].label      = 'SEQUENCE'
+#    Configs[ci].selectAll  = 1
+#    Configs[ci].sort       = 1
+#
+#    ## Condition
+#    ci = ci + 1
+#    Configs[ci].title      = 'Condition'
+#    Configs[ci].label      = 'CONDITION'
+#    Configs[ci].selectAll  = 1
+#    Configs[ci].sort       = 0
+#    Configs[ci].numColumns = 3
+#
+#    ## QP / Rate
+#    ci = ci + 1
+#    Configs[ci].title      = 'Rate/QP'
+#    Configs[ci].label      = 'RATE_QP'
+#    Configs[ci].selectAll  = 1
+
+###################################################################################################################
+# Plots Defaults
+plot_default_layer:
+  X: "BITRATE"
+  Y: "PSNR_YUV"
+
+GnuPlotFont: TimesNewRoman,28
+PlotFile: pyPlotYaml
+KeepPlotFile: 1
+PlotLegendPosition: Bottom Right # Off, Top Left, Top Right, Bottom Left, Bottom Right
+
+
+###################################################################################################################
+# Names mapping
+ConfigMapping:
+  BYTES_RANDOM_ACCESS_FOV_SAL_AVG: Avg. Bytes Required Random-Access
+  TILE_BITS_AVG: Avg. Tile Size YAML
+  ExtConv_AsymmetricTilesVariance8x4WithTrueBits302: AdaptiveVariance+8x4Tiles+TrueBits302
+  ExtConv_AsymmetricTilesVariance6x3WithTrueBits302: AdaptiveVariance+6x3Tiles+TrueBits302
+  ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporal: AdaptiveVariance+8x4Tiles+SpatioTemporal
+  ExtConv_AsymmetricTilesVariance6x3WithSobelSpatioTemporal: AdaptiveVariance+6x3Tiles+SpatioTemporal
+  ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency: AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L1
+  ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency10: AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L10
+  ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency01: AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L0.1
+  ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency100: AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L100
+  ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency1000: AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L1000
+  ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency10000: AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L10000
+
+
+#    ConfigMappingAppend
+#    ConfigMappingAppend = [
+#    ( 'BYTES_RANDOM_ACCESS_FOV_SAL_AVG','Avg. Bytes Required Random-Access' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithTrueBits302','AdaptiveVariance+8x4Tiles+TrueBits302' ),
+#    ( 'ExtConv_AsymmetricTilesVariance6x3WithTrueBits302','AdaptiveVariance+6x3Tiles+TrueBits302' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporal','AdaptiveVariance+8x4Tiles+SpatioTemporal' ),
+#    ( 'ExtConv_AsymmetricTilesVariance6x3WithSobelSpatioTemporal','AdaptiveVariance+6x3Tiles+SpatioTemporal' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency','AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L1' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency10','AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L10' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency01','AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L0.1' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency100','AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L100' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency1000','AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L1000' ),
+#    ( 'ExtConv_AsymmetricTilesVariance8x4WithSobelSpatioTemporalSaliency10000','AdaptiveVariance+8x4Tiles+SpatioTemporal+Saliency+L10000' ),
+#  ]

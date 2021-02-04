@@ -54,6 +54,8 @@ class PlotGenerator(AbstractGenerator):
     else:
       return
 
+    GnuPlotTerminalConfig += " font '%s'" % ( GnuPlotFont )
+
     GnuPlotTerminalConfig += " \\"
     self.OutputScript.write( GnuPlotTerminalConfig )
     self.OutputScript.write( self.Template.GnuPlotTemplate )

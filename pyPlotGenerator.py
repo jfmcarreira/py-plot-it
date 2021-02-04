@@ -96,6 +96,11 @@ class PlotConfiguration(DataSet):
   _bgTabG0 = BeginTabGroup("Tab1").set_pos(col=2)
   _bgFig = BeginGroup("Figure options").set_prop("display", callback=updateOutputType)
   legendPosition = ["Off", "Top Left", "Top Right", "Bottom Left", "Bottom Right"]
+  if PlotLegendPosition:
+    for i in range( len(legendPosition) ):
+          if PlotLegendPosition == legendPosition[i]:
+                PlotLegendDefault = i
+
   terminalIdx = ChoiceItem( "Gnuplot terminal", GnuplotTerminals, default=GnuplotTerminalDefault )
   legendPositionIdx = ChoiceItem( "Legend Position", legendPosition, default=PlotLegendDefault )
   #_bgAx = BeginGroup("Axis definition")

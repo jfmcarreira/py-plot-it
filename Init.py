@@ -2,6 +2,7 @@
 
 import os, sys
 import operator
+import yaml
 from MiscFct import *
 
 ############################################################################################
@@ -9,14 +10,16 @@ from MiscFct import *
 ############################################################################################
 TypeDefault = 0
 ConfigVersion = 1
+Configs = []
 ConfigMapping = []
 LatexTemplateDefault = """
 
 """
 GnuplotTerminals = ["eps", "pdf"]
 
+GnuPlotFont = "TimesNewRoman,12"
+
 GnuPlotTemplateDefault = """
-font 'TimesNewRoman,14'
 
 set datafile missing '-'
 
@@ -69,11 +72,12 @@ GnuPlotTemplateBarPlotExtra = """
 # Extra template
 """
 
-FilterNonExistent = 0
+FilterNonExistent = 1
 ResultsFileDefault = ""
 PlotFileDefault = ""
 KeepPlotFileDefault = 0
 PlotLegendDefault = 0
+PlotLegendPosition = ""
 AxisLimitDefaultX = ""
 AxisLimitDefaultY = ""
 
@@ -92,7 +96,7 @@ XValueDefaultLabel = ""
 YValueDefaultLabel = ""
 
 GenerateBarPlotDefault = 0
-GnuplotTerminalDefault = "eps"
+GnuplotTerminalDefault = 1
 DefaultMeasureBDRate = 0
 DefaultShowLinesColumnwise = False
 DefaultShowOnlyBD = False
@@ -122,6 +126,14 @@ class ConfigurationList:
     self.showLabels = 1
     self.numColumns = 5
 
+  def fromYAML(self, cfg ):
+    if 'title' in cfg: self.title = cfg["title"]
+    if 'tab' in cfg: self.tab = cfg["tab"]
+    if 'label' in cfg: self.label = cfg["label"]
+    if 'selectAll' in cfg: self.selectAll = cfg["selectAll"]
+    if 'sort' in cfg: self.sort = cfg["sort"]
+    if 'numColumns' in cfg: self.numColumns = cfg["numColumns"]
+
 
 if os.path.exists("cfgData.py"):
   exec(open("cfgData.py").read())
@@ -130,6 +142,46 @@ elif os.path.exists("../cfgData.py"):
 else:
   print("No cfg file!")
   exit()
+
+
+## Add support for YAML import
+yamlCfg = ""
+if os.path.exists("cfgData.yaml"):
+  yamlCfg = "cfgData.yaml"
+elif os.path.exists("../cfgData.yaml"):
+  yamlCfg = "../cfgData.yaml"
+
+
+if yamlCfg:
+  with open(yamlCfg) as infile:
+      parsed_yaml_file = yaml.load(infile, Loader=yaml.FullLoader)
+
+  ConfigVersion = int( parsed_yaml_file["ConfigVersion"] )
+  if "ResultsFile" in parsed_yaml_file: ResultsFileDefault = parsed_yaml_file["ResultsFile"]
+
+  idx = 0
+  Configs = []
+  for c in parsed_yaml_file["columns"]:
+    cfg = ConfigurationList()
+    cfg.fromYAML(c)
+    Configs.append( cfg )
+
+  if 'ConfigMapping' in parsed_yaml_file:
+    confMapDict = parsed_yaml_file["ConfigMapping"]
+    for key in confMapDict:
+      ConfigMapping.append( (key, confMapDict[key] ) )
+
+  if "BuildAxisValuesAuto" in parsed_yaml_file: BuildAxisValuesAuto = bool( parsed_yaml_file["BuildAxisValuesAuto"])
+  if "plot_default_layer" in parsed_yaml_file:
+    XValueDefaultLabel = parsed_yaml_file["plot_default_layer"]["X"]
+    YValueDefaultLabel = parsed_yaml_file["plot_default_layer"]["Y"]
+
+
+  if "PlotFile" in parsed_yaml_file: PlotFileDefault = parsed_yaml_file["PlotFile"]
+  if "KeepPlotFile" in parsed_yaml_file: KeepPlotFileDefault = int( parsed_yaml_file["KeepPlotFile"] )
+  if "PlotLegendPosition" in parsed_yaml_file: PlotLegendPosition = parsed_yaml_file["PlotLegendPosition"]
+  if "GnuPlotFont" in parsed_yaml_file: GnuPlotFont = parsed_yaml_file["GnuPlotFont"]
+
 
 
 ############################################################################################
@@ -166,7 +218,7 @@ elif ConfigVersion == 2:
         currConfig.name.append( ConfigsImport[i].details[j][1] )
     Configs.append( currConfig )
 
-elif ConfigVersion == 3:
+elif ConfigVersion >= 3:
   for i in range( len( ConfigsImport ) ):
     currConfig = ConfigsImport[i]
     if currConfig.tab == -1:
@@ -211,7 +263,7 @@ else:
       AxisValues[i] = tuple( l )
 
 flagAutoGenerate = False
-if ConfigVersion == 3:
+if ConfigVersion >= 3:
   if len(sys.argv) > 1:
     print("Loading default values from file " + sys.argv[1])
     exec( open( sys.argv[1] ).read() )

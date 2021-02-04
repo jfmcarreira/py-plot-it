@@ -135,12 +135,12 @@ class AbstractGenerator:
         if self.Configs[i].title == self.PltConfig.aAvailableCfg[j]:
           use_for_points = True
           break
-      
+
       for j in self.PltConfig.skipFilterCfg:
         if self.Configs[i].title == self.PltConfig.aAvailableCfg[j]:
           skip_config = True
           break
-        
+
       if not skip_config:
         if not use_for_points:
           if use_for_plot == 0:

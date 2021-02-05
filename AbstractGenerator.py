@@ -46,6 +46,10 @@ class AbstractGenerator:
       curr_idx = self.fileConfigChoice[i][currentFileConfigChoice[i]]
       filteredResults = filterResults( filteredResults, self.fileConfig[i].tab, self.fileConfig[i].configs[curr_idx] )
 
+    # print()
+    # for l in filteredResults:
+    #   print(l)
+
     applyFiltering = False
     for i in range( len( self.plotConfig )):
       curr_idx = self.plotConfigChoice[i][currentPlotConfigChoice[i]]
@@ -53,6 +57,11 @@ class AbstractGenerator:
         applyFiltering = True
         continue
       filteredResults = filterResults( filteredResults, self.plotConfig[i].tab, self.plotConfig[i].configs[curr_idx] )
+
+    # print()
+    # for l in filteredResults:
+    #   print(l)
+    #print( self.numberPoints )
 
     currentPointConfigChoice = [ int(0) for i in range( len( self.pointConfig ) )]
     for point_idx in range( self.numberPoints ):
@@ -67,6 +76,7 @@ class AbstractGenerator:
         barLabel = barLabel[:-3]
 
       if not curr_point == []:
+
         curr_point = curr_point[0] # Discard remaining results
         # TODO: Add average
 
@@ -77,15 +87,16 @@ class AbstractGenerator:
         if self.PltConfig.showExtra:
           currPlotData.append( curr_point[self.PltConfig.selectExtraYValues - 1] )
 
-
-        for i in reversed(range( len( self.pointConfig ))):
-          if currentPointConfigChoice[i] ==  len( self.pointConfigChoice[i] ) - 1:
-            currentPointConfigChoice[i] = 0
-          else:
-            currentPointConfigChoice[i] += 1
-            break
-
         plotResults.append( currPlotData )
+
+      for i in reversed(range( len( self.pointConfig ))):
+        if currentPointConfigChoice[i] ==  len( self.pointConfigChoice[i] ) - 1:
+          currentPointConfigChoice[i] = 0
+        else:
+          currentPointConfigChoice[i] += 1
+          break
+
+
 
     return plotResults
 
@@ -294,6 +305,8 @@ class AbstractGenerator:
     Q2 = [float(x[prY]) for x in processed]
 
     if len(R1) < 4 or len(R2) < 4 or len(Q1) < 4 or len(Q2) < 4:
+      return "NaN"
+    if numpy.isnan(numpy.sum([R1, Q1, R2, Q2])):
       return "NaN"
 
     log_R1 = map(math.log, R1)

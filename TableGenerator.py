@@ -22,7 +22,7 @@ class TableGenerator(AbstractGenerator):
     AbstractGenerator.__init__(self, Configs, Results, PltConfig)
     self.Template = Template
     self.useMultiRow = False
-    
+
   def header(self):
 
     if self.PltConfig.measureBDRate == 0:
@@ -229,7 +229,7 @@ class TableGenerator(AbstractGenerator):
 
       for j in range ( len( plotResults ) ):
         if plotResults[j][prLabel] == self.TableHeaderLabels[i]:
-          result = plotResults[i]
+          result = plotResults[j]
           break
 
       if not result == []:

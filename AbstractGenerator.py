@@ -227,6 +227,7 @@ class AbstractGenerator:
           self.currentLegend += self.plotConfig[i].name[curr_idx] + " - "
 
         self.currentLegend = processLabel(self.currentLegend[:-3])
+        print( self.currentLegend )
 
         plotResults = self.getData( currentFileConfigChoice, currentPlotConfigChoice )
         extraResults = []
